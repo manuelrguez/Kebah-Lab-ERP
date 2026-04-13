@@ -1,0 +1,94 @@
+/* ── DARK THEME (default) ────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg:     #0d1117;
+  --bg2:    #161b22;
+  --bg3:    #1c2128;
+  --bg4:    #21262d;
+  --border: #30363d;
+  --text:   #e6edf3;
+  --text2:  #8b949e;
+  --text3:  #6e7681;
+}
+
+/* ── LIGHT THEME ─────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg:     #f6f8fa;
+  --bg2:    #ffffff;
+  --bg3:    #f0f2f5;
+  --bg4:    #e8ebef;
+  --border: #d0d7de;
+  --text:   #1f2328;
+  --text2:  #57606a;
+  --text3:  #8c959f;
+}
+
+/* Light mode specific fixes */
+[data-theme="light"] .sidebar {
+  background: #ffffff;
+  border-right-color: #d0d7de;
+}
+[data-theme="light"] .topbar {
+  background: #ffffff;
+  border-bottom-color: #d0d7de;
+}
+[data-theme="light"] .nav-item:hover {
+  background: #f0f2f5;
+}
+[data-theme="light"] .nav-item.active {
+  background: #fff8e6;
+}
+[data-theme="light"] .stat-card {
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+[data-theme="light"] .card {
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+[data-theme="light"] .modal {
+  background: #ffffff;
+  box-shadow: 0 24px 64px rgba(0,0,0,.15);
+}
+[data-theme="light"] input,
+[data-theme="light"] select,
+[data-theme="light"] textarea {
+  background: #f6f8fa !important;
+  color: #1f2328 !important;
+  border-color: #d0d7de !important;
+  color-scheme: light;
+}
+[data-theme="light"] .chat-container {
+  background: #ffffff;
+}
+[data-theme="light"] .chat-header,
+[data-theme="light"] .chat-input-row {
+  background: #f6f8fa;
+}
+[data-theme="light"] .msg--assistant {
+  background: #f0f2f5;
+}
+[data-theme="light"] table {
+  color: #1f2328;
+}
+[data-theme="light"] .drop-zone {
+  background: #f6f8fa;
+}
+[data-theme="light"] .delivery-card {
+  background: #f6f8fa;
+}
+[data-theme="light"] .login-card {
+  background: #ffffff;
+  box-shadow: 0 8px 32px rgba(0,0,0,.1);
+}
+[data-theme="light"] .login-wrapper {
+  background: #f6f8fa;
+}
+[data-theme="light"] .map-placeholder {
+  background: #f0f2f5;
+}
+[data-theme="light"] .sidebar-footer {
+  border-top-color: #d0d7de;
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #d0d7de;
+}

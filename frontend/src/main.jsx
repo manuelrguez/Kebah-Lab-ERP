@@ -7,8 +7,12 @@ import { store } from './store/index.js'
 import App from './App.jsx'
 import './styles/global.css'
 import './styles/components.css'
-import 'leaflet/dist/leaflet.css'
 import './styles/modal.css'
+import './styles/theme.css'
+
+// Initialize theme before render to avoid flash
+const savedTheme = localStorage.getItem('kl_theme') || 'dark'
+document.documentElement.setAttribute('data-theme', savedTheme)
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

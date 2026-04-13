@@ -1,5 +1,6 @@
-import { Bell, MessageSquare } from 'lucide-react'
+import { Bell, MessageSquare, Sun, Moon } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth.js'
+import { useTheme } from '../../hooks/useTheme.js'
 
 const ROLE_LABELS = {
   superadmin:  'Superadministrador',
@@ -9,7 +10,9 @@ const ROLE_LABELS = {
 }
 
 const Topbar = ({ title, breadcrumb }) => {
-  const { user } = useAuth()
+  const { user }        = useAuth()
+  const { theme, toggle } = useTheme()
+
   const initials = user?.nombre
     ? user.nombre.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
     : 'KL'
@@ -21,6 +24,19 @@ const Topbar = ({ title, breadcrumb }) => {
         {breadcrumb && <span className="topbar-bread">/ {breadcrumb}</span>}
       </div>
       <div className="topbar-right">
+        {/* Theme toggle */}
+        <button
+          className="icon-btn"
+          onClick={toggle}
+          title={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+          style={{ transition: 'all .2s' }}
+        >
+          {theme === 'dark'
+            ? <Sun size={15} style={{ color: 'var(--gold)' }} />
+            : <Moon size={15} style={{ color: 'var(--text2)' }} />
+          }
+        </button>
+
         <button className="icon-btn">
           <Bell size={16} />
           <span className="notif-dot" />
