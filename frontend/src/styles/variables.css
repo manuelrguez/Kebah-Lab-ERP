@@ -32,3 +32,21 @@
   /* Transitions */
   --transition: all 0.15s ease;
 }
+
+
+/* Layout variables — always available */
+:root {
+  --sidebar-width: 220px;
+  --topbar-height: 52px;
+  --radius:  8px;
+  --radius-sm: 4px;
+  --radius-lg: 12px;
+  --transition: all 0.15s ease;
+  --gold:   #E5BC55;
+  --gold2:  #f0cd7a;
+  --green:  #3fb950;
+  --red:    #f85149;
+  --orange: #e3a62a;
+  --blue:   #58a6ff;
+  --purple: #bc8cff;
+}
