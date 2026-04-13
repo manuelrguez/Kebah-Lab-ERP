@@ -272,3 +272,31 @@
 [data-theme="light"] .recharts-text {
   fill: var(--text3) !important;
 }
+
+
+/* ── LIGHT: Fix layout dimensions ───────────────────────────────────────── */
+[data-theme="light"] aside.sidebar {
+  width: var(--sidebar-width) !important;
+  min-width: var(--sidebar-width) !important;
+  flex-shrink: 0 !important;
+}
+
+[data-theme="light"] header.topbar {
+  height: var(--topbar-height) !important;
+  min-height: var(--topbar-height) !important;
+  flex-shrink: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+[data-theme="light"] .topbar-left,
+[data-theme="light"] .topbar-right {
+  display: flex !important;
+  align-items: center !important;
+}
+
+[data-theme="light"] .topbar-title {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+}
