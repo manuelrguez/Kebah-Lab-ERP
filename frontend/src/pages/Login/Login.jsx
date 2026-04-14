@@ -14,7 +14,8 @@ const Login = () => {
     <div className="login-wrapper">
       <div className="login-card">
         <div className="login-logo">
-          <div className="logo-icon large">K</div>
+          <img src="/logo-kebablab.png" alt="Kebah Lab"
+            style={{ width: 72, height: 72, borderRadius: 16, objectFit: 'cover', margin: '0 auto', display: 'block' }} />
           <h1>Kebah Lab ERP</h1>
           <p>Gestión inteligente de franquicias</p>
         </div>
