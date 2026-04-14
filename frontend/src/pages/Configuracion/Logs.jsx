@@ -4,13 +4,30 @@ import api from '../../services/api.js'
 import toast from 'react-hot-toast'
 
 const ACCION_STYLE = {
-  LOGIN:   { color: 'var(--green)',  bg: 'rgba(63,185,80,.12)',   emoji: '🔑' },
-  LOGOUT:  { color: 'var(--text3)', bg: 'rgba(110,118,129,.12)', emoji: '🚪' },
-  CREATE:  { color: 'var(--blue)',   bg: 'rgba(88,166,255,.12)',  emoji: '➕' },
-  UPDATE:  { color: 'var(--gold)',   bg: 'rgba(229,188,85,.12)',  emoji: '✏️' },
-  DELETE:  { color: 'var(--red)',    bg: 'rgba(248,81,73,.12)',   emoji: '🗑️' },
-  VIEW:    { color: 'var(--text3)', bg: 'rgba(110,118,129,.08)', emoji: '👁️' },
-  ERROR:   { color: 'var(--red)',    bg: 'rgba(248,81,73,.12)',   emoji: '⚠️' },
+  LOGIN:               { color: 'var(--green)',  bg: 'rgba(63,185,80,.12)',   emoji: '🔑' },
+  LOGOUT:              { color: 'var(--text3)',  bg: 'rgba(110,118,129,.12)', emoji: '🚪' },
+  CREAR_FRANQUICIA:    { color: 'var(--blue)',   bg: 'rgba(88,166,255,.12)',  emoji: '🏪' },
+  EDITAR_FRANQUICIA:   { color: 'var(--gold)',   bg: 'rgba(229,188,85,.12)',  emoji: '✏️' },
+  BORRAR_FRANQUICIA:   { color: 'var(--red)',    bg: 'rgba(248,81,73,.12)',   emoji: '🗑️' },
+  CREAR_EMPLEADO:      { color: 'var(--blue)',   bg: 'rgba(88,166,255,.12)',  emoji: '👤' },
+  EDITAR_EMPLEADO:     { color: 'var(--gold)',   bg: 'rgba(229,188,85,.12)',  emoji: '✏️' },
+  BAJA_EMPLEADO:       { color: 'var(--red)',    bg: 'rgba(248,81,73,.12)',   emoji: '⛔' },
+  GENERAR_NOMINAS:     { color: 'var(--purple)', bg: 'rgba(188,140,255,.12)', emoji: '💰' },
+  EDITAR_NOMINA:       { color: 'var(--gold)',   bg: 'rgba(229,188,85,.12)',  emoji: '✏️' },
+  REGISTRAR_VENTA:     { color: 'var(--green)',  bg: 'rgba(63,185,80,.12)',   emoji: '💳' },
+  EDITAR_VENTA:        { color: 'var(--gold)',   bg: 'rgba(229,188,85,.12)',  emoji: '✏️' },
+  BORRAR_VENTA:        { color: 'var(--red)',    bg: 'rgba(248,81,73,.12)',   emoji: '🗑️' },
+  SYNC_DELIVERY_ALL:   { color: 'var(--blue)',   bg: 'rgba(88,166,255,.12)',  emoji: '🔄' },
+  SYNC_DELIVERY:       { color: 'var(--blue)',   bg: 'rgba(88,166,255,.12)',  emoji: '🛵' },
+  CREAR_FACTURA:       { color: 'var(--blue)',   bg: 'rgba(88,166,255,.12)',  emoji: '🧾' },
+  EDITAR_FACTURA:      { color: 'var(--gold)',   bg: 'rgba(229,188,85,.12)',  emoji: '✏️' },
+  ANULAR_FACTURA:      { color: 'var(--red)',    bg: 'rgba(248,81,73,.12)',   emoji: '❌' },
+  EXPORT_ZIP_GESTORIA: { color: 'var(--purple)', bg: 'rgba(188,140,255,.12)', emoji: '📦' },
+  OCR_FACTURA:         { color: 'var(--purple)', bg: 'rgba(188,140,255,.12)', emoji: '📷' },
+  CONSULTA_IA:         { color: 'var(--gold)',   bg: 'rgba(229,188,85,.12)',  emoji: '🤖' },
+  ANALISIS_CV:         { color: 'var(--gold)',   bg: 'rgba(229,188,85,.12)',  emoji: '📄' },
+  GENERAR_INFORME:     { color: 'var(--purple)', bg: 'rgba(188,140,255,.12)', emoji: '📊' },
+  ERROR:               { color: 'var(--red)',    bg: 'rgba(248,81,73,.12)',   emoji: '⚠️' },
 }
 
 const ROL_STYLE = {
@@ -70,6 +87,10 @@ const Logs = () => {
 
   useEffect(() => { load() }, [load])
   useEffect(() => { setPage(1) }, [tab, filters])
+  useEffect(() => {
+    const interval = setInterval(load, 30000)
+    return () => clearInterval(interval)
+  }, [load])
 
   const setF = (k, v) => setFilters(f => ({ ...f, [k]: v }))
 
@@ -129,8 +150,16 @@ const Logs = () => {
         <select className="input-select" value={filters.accion}
           onChange={e => setF('accion', e.target.value)}>
           <option value="">Todas las acciones</option>
-          {['LOGIN','LOGOUT','CREATE','UPDATE','DELETE','ERROR'].map(a =>
-            <option key={a} value={a}>{a}</option>)}
+          {[
+            'LOGIN','LOGOUT',
+            'CREAR_FRANQUICIA','EDITAR_FRANQUICIA','BORRAR_FRANQUICIA',
+            'CREAR_EMPLEADO','EDITAR_EMPLEADO','BAJA_EMPLEADO','GENERAR_NOMINAS',
+            'REGISTRAR_VENTA','EDITAR_VENTA','BORRAR_VENTA',
+            'SYNC_DELIVERY','SYNC_DELIVERY_ALL',
+            'CREAR_FACTURA','EDITAR_FACTURA','ANULAR_FACTURA','EXPORT_ZIP_GESTORIA','OCR_FACTURA',
+            'CONSULTA_IA','ANALISIS_CV','GENERAR_INFORME',
+            'ERROR'
+          ].map(a => <option key={a} value={a}>{a}</option>)}
         </select>
         <input type="date" className="input-select" value={filters.fecha_desde}
           onChange={e => setF('fecha_desde', e.target.value)} />
