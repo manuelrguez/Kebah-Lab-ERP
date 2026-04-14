@@ -99,7 +99,8 @@ const SKIP_ROUTES = [
   '/api/delivery/por-dia',
   '/api/rrhh/stats',
   '/api/facturacion/stats',
-  '/api/logs', // no logear las propias peticiones de logs
+  '/api/logs',
+  '/api/franquicias/meta',
 ]
 
 const logMiddleware = (req, res, next) => {
@@ -122,13 +123,14 @@ const logMiddleware = (req, res, next) => {
 
       // Only log if user is authenticated OR it's a login attempt
       const userId = req.user?.id
-      if (!userId && !req.path.includes('/auth/login')) return
+      const esLogin = req.path.includes('/auth/login')
+      if (!userId && !esLogin) return
 
       await Log.create({
         usuario_id:     userId || null,
-        usuario_nombre: req.user?.nombre || req.body?.email || '—',
-        usuario_email:  req.user?.email  || req.body?.email || '—',
-        rol:            req.user?.rol    || 'anon',
+        usuario_nombre: req.user?.nombre || (esLogin ? req.body?.email : '—') || '—',
+        usuario_email:  req.user?.email  || (esLogin ? req.body?.email : '—') || '—',
+        rol:            req.user?.rol    || (esLogin ? 'anon' : 'anon'),
         accion,
         modulo,
         descripcion,
