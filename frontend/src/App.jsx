@@ -18,6 +18,7 @@ import Facturas from './pages/Facturacion/Facturas.jsx'
 import InformesIA from './pages/Informes/InformesIA.jsx'
 import AsistenteIA from './pages/AsistenteIA/AsistenteIA.jsx'
 import Perfil from './pages/Configuracion/Perfil.jsx'
+import LogsPage from './pages/Logs/Logs.jsx'
 
 // Route wrapper with Layout
 const Page = ({ component: Component, title, breadcrumb, module }) => (
@@ -91,6 +92,10 @@ const App = () => {
       <Route path="/asistente" element={
         <Page component={AsistenteIA} title="Asistente IA"
           breadcrumb="Kebab Lab / Asistente" module="asistente" />
+      } />
+      <Route path="/logs" element={
+        <Page component={LogsPage} title="Logs de Actividad"
+          breadcrumb="Kebab Lab / Logs" module="logs" />
       } />
       <Route path="/configuracion" element={
         <Page component={Perfil} title="Configuración"

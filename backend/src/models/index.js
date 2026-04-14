@@ -9,6 +9,7 @@ const Factura     = require('./Factura.js')
 const VentaTPV    = require('./VentaTPV.js')
 const VentaDelivery = require('./VentaDelivery.js')
 const Informe     = require('./Informe.js')
+const Log         = require('./Log.js')
 
 // ── Associations ──────────────────────────────────────────────────────────────
 Comunidad.hasMany(Empresa,    { foreignKey: 'comunidad_id' })
@@ -26,11 +27,11 @@ Usuario.belongsTo(Empresa,    { foreignKey: 'empresa_id' })
 Franquicia.hasMany(Usuario,   { foreignKey: 'franquicia_id' })
 Usuario.belongsTo(Franquicia, { foreignKey: 'franquicia_id' })
 
-Franquicia.hasMany(Empleado,  { foreignKey: 'franquicia_id', as: 'empleados' })
-Empleado.belongsTo(Franquicia,{ foreignKey: 'franquicia_id', as: 'franquicia' })
+Franquicia.hasMany(Empleado,  { foreignKey: 'franquicia_id' })
+Empleado.belongsTo(Franquicia,{ foreignKey: 'franquicia_id' })
 
-Empleado.hasMany(Nomina,      { foreignKey: 'empleado_id', as: 'nominas' })
-Nomina.belongsTo(Empleado,    { foreignKey: 'empleado_id', as: 'empleado' })
+Empleado.hasMany(Nomina,      { foreignKey: 'empleado_id' })
+Nomina.belongsTo(Empleado,    { foreignKey: 'empleado_id' })
 
 Empresa.hasMany(Factura,      { foreignKey: 'empresa_id' })
 Factura.belongsTo(Empresa,    { foreignKey: 'empresa_id' })
@@ -41,7 +42,8 @@ VentaTPV.belongsTo(Franquicia,{ foreignKey: 'franquicia_id', as: 'franquicia' })
 Franquicia.hasMany(VentaDelivery, { foreignKey: 'franquicia_id', as: 'ventasDelivery' })
 VentaDelivery.belongsTo(Franquicia, { foreignKey: 'franquicia_id', as: 'franquicia' })
 
+// Log has no associations — standalone
 module.exports = {
   sequelize, Comunidad, Empresa, Franquicia, Usuario,
-  Empleado, Nomina, Factura, VentaTPV, VentaDelivery, Informe
+  Empleado, Nomina, Factura, VentaTPV, VentaDelivery, Informe, Log
 }

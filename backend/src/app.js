@@ -8,6 +8,7 @@ const morgan   = require('morgan')
 const cron     = require('node-cron')
 const sequelize = require('./config/database.js')
 
+const logMiddleware = require('./middleware/log.middleware.js')
 const app = express()
 
 // ── Middleware ────────────────────────────────────────────────────────────────
@@ -19,6 +20,7 @@ app.use(cors({
 app.use(morgan('dev'))
 app.use(express.json({ limit: '20mb' }))
 app.use(express.urlencoded({ extended: true }))
+app.use(logMiddleware)
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use('/api/auth',        require('./routes/auth.routes.js'))
@@ -28,6 +30,7 @@ app.use('/api/delivery',    require('./routes/delivery.routes.js'))
 app.use('/api/rrhh',        require('./routes/rrhh.routes.js'))
 app.use('/api/facturacion', require('./routes/facturacion.routes.js'))
 app.use('/api/informes',    require('./routes/informes.routes.js'))
+app.use('/api/logs',        require('./routes/logs.routes.js'))
 app.use('/api/ia',          require('./routes/ia.routes.js'))
 
 // ── Health check ──────────────────────────────────────────────────────────────

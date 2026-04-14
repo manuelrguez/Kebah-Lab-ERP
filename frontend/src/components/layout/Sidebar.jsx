@@ -3,7 +3,7 @@ import { useAuth } from '../../hooks/useAuth.js'
 import {
   LayoutDashboard, Map, Store, CreditCard, Bike,
   Users, DollarSign, FileText, BarChart3, Bot,
-  Settings, LogOut
+  Settings, LogOut, ScrollText
 } from 'lucide-react'
 
 const NAV = [
@@ -22,6 +22,7 @@ const NAV = [
   { section: 'HERRAMIENTAS' },
   { to: '/informes',    label: 'Informes IA',  icon: BarChart3,       module: 'informes', badge: 'IA' },
   { to: '/asistente',   label: 'Asistente IA', icon: Bot,             module: 'asistente', badge: 'Nuevo' },
+  { to: '/logs',         label: 'Logs',          icon: ScrollText,     module: 'logs'          },
   { to: '/configuracion',label: 'Configuración',icon: Settings,       module: 'configuracion' },
 ]
 
@@ -31,10 +32,9 @@ const Sidebar = () => {
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <img src="/logo-kebablab.png" alt="Kebah Lab"
-          style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover' }} />
+        <div className="logo-icon">K</div>
         <div>
-          <div className="logo-name">Kebah Lab</div>
+          <div className="logo-name">Kebab Lab</div>
           <div className="logo-sub">ERP Suite</div>
         </div>
       </div>
