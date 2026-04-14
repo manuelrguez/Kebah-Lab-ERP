@@ -94,7 +94,7 @@ const App = () => {
           breadcrumb="Kebab Lab / Asistente" module="asistente" />
       } />
       <Route path="/logs" element={
-        <Page component={LogsPage} title="Logs de Actividad"
+        <Page component={Logs} title="Logs de Actividad"
           breadcrumb="Kebab Lab / Logs" module="logs" />
       } />
       <Route path="/configuracion" element={
