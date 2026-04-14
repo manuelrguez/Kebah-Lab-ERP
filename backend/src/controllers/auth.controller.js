@@ -20,6 +20,25 @@ exports.login = async (req, res) => {
     await user.update({ ultimo_acceso: new Date() })
     const token = signToken(user)
 
+    try {
+      const Log = require('../models/Log.js')
+      await Log.create({
+        usuario_id:     user.id,
+        usuario_nombre: user.nombre,
+        usuario_email:  user.email,
+        rol:            user.rol,
+        accion:         'LOGIN',
+        modulo:         'auth',
+        descripcion:    `Inicio de sesión: ${user.email}`,
+        ip:             req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || '—',
+        user_agent:     req.headers['user-agent']?.substring(0, 200) || '—',
+        metodo:         'POST',
+        ruta:           '/api/auth/login',
+        status_code:    200,
+        duracion_ms:    0,
+      })
+    } catch (e) { console.error('[LOG LOGIN]', e.message) }
+
     res.json({
       token,
       user: {

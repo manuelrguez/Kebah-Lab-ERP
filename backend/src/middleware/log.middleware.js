@@ -74,6 +74,7 @@ const getDescripcion = (method, ruta, body, accion) => {
 const SKIP_ROUTES = [
   '/api/health',
   '/api/auth/me',
+  '/api/auth/login',
   '/api/ventas/dashboard-stats',
   '/api/ventas/por-dia',
   '/api/ventas/por-franquicia',
