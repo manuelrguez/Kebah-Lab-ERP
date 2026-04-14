@@ -204,7 +204,7 @@ const Logs = () => {
                     No hay registros de actividad
                   </td></tr>
                 ) : logs.map(log => {
-                  const accionStyle = ACCION_STYLE[log.accion] || ACCION_STYLE.VIEW
+                  const accionStyle = ACCION_STYLE[log.accion] || { color: 'var(--text3)', bg: 'rgba(110,118,129,.08)', emoji: '•' }
                   const rolStyle    = ROL_STYLE[log.rol] || { color: 'var(--text3)', label: log.rol }
                   return (
                     <tr key={log.id}>
