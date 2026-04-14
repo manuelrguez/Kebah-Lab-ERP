@@ -30,6 +30,7 @@ export const MENU_PERMISSIONS = {
   informes:     ['superadmin', 'central', 'empresa'],
   asistente:    ['superadmin', 'central', 'empresa', 'franquiciado'],
   configuracion:['superadmin', 'central', 'empresa', 'franquiciado'],
+  logs: ['superadmin', 'central'],
 }
 
 export const canAccess = (userRole, module) =>

@@ -22,8 +22,9 @@ const NAV = [
   { section: 'HERRAMIENTAS' },
   { to: '/informes',    label: 'Informes IA',  icon: BarChart3,       module: 'informes', badge: 'IA' },
   { to: '/asistente',   label: 'Asistente IA', icon: Bot,             module: 'asistente', badge: 'Nuevo' },
+  { section: 'SISTEMA' },
   { to: '/logs',         label: 'Logs',          icon: ScrollText,     module: 'logs'          },
-  { to: '/configuracion',label: 'Configuración',icon: Settings,       module: 'configuracion' },
+  { to: '/configuracion',label: 'Configuración', icon: Settings,       module: 'configuracion' },
 ]
 
 const Sidebar = () => {
