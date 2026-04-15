@@ -21,75 +21,73 @@ const conectar = (credentials) => {
 
 const listarEmails = (imap, opts) => {
   return new Promise((resolve, reject) => {
-    imap.openBox(opts.carpeta || 'INBOX', false, (err) => {
+    imap.openBox(opts.carpeta || 'INBOX', false, (err, box) => {
       if (err) return reject(err)
 
-      const criteria = opts.soloNoLeidos ? ['UNSEEN'] : ['ALL']
+      const total = box.messages.total
+      if (total === 0) return resolve([])
 
-      if (opts.filtros?.desde) {
-        criteria.push(['FROM', opts.filtros.desde])
-      }
+      const criteria = opts.soloNoLeidos ? ['UNSEEN'] : ['ALL']
+      if (opts.filtros?.desde) criteria.push(['FROM', opts.filtros.desde])
       if (opts.filtros?.desde_fecha) {
         const d = new Date(opts.filtros.desde_fecha)
         const meses = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-        const fechaImap = `${d.getDate()}-${meses[d.getMonth()]}-${d.getFullYear()}`
-        criteria.push(['SINCE', fechaImap])
+        criteria.push(['SINCE', `${d.getDate()}-${meses[d.getMonth()]}-${d.getFullYear()}`])
       }
 
-      imap.search(criteria, (err, seqNums) => {
+      imap.search(criteria, (err, seqNos) => {
         if (err) return reject(err)
-        if (!seqNums || seqNums.length === 0) {
-          console.log('[IMAP] No se encontraron emails con los criterios dados')
-          return resolve([])
-        }
+        if (!seqNos?.length) return resolve([])
 
-        console.log(`[IMAP] ${seqNums.length} emails encontrados, limitando a ${opts.maxEmails || 20}`)
-        // Coger los más recientes (últimos N)
-        const limited = seqNums.slice(-(opts.maxEmails || 20))
-        resolve(limited.map(seq => ({ id: seq })))  // seq como número, no string
+        const limited = seqNos.slice(-(opts.maxEmails || 20))
+        console.log(`[IMAP] ${seqNos.length} emails, usando últimos ${limited.length}: ${limited.join(',')}`)
+        resolve(limited.map(seq => ({ id: seq })))
       })
     })
   })
 }
 
-const obtenerContenido = (imap, uid) => {
+const obtenerContenido = (imap, seqNo) => {
   return new Promise((resolve, reject) => {
-    // Usar UID fetch, no sequence number fetch
-    const fetch = imap.fetch(uid, {
+    const chunks  = []
+    let resolved  = false
+
+    const f = imap.seq.fetch(seqNo + ':' + seqNo, {
       bodies:   '',
       struct:   true,
       markSeen: false,
     })
 
-    const chunks = []
-    let resolved = false
-
-    fetch.on('message', (msg) => {
+    f.on('message', (msg) => {
       msg.on('body', (stream) => {
-        stream.on('data', chunk => chunks.push(chunk))
+        stream.on('data', c => chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c)))
       })
     })
 
-    fetch.once('error', (err) => {
+    f.once('error', (err) => {
       if (!resolved) { resolved = true; reject(err) }
     })
 
-    fetch.once('end', async () => {
+    f.once('end', async () => {
       if (resolved) return
       resolved = true
+
+      if (!chunks.length) {
+        console.warn(`[IMAP] seq ${seqNo}: buffer vacío`)
+        return resolve({ adjuntos:[], cuerpoHtml:'', cuerpoTexto:'', asunto:'', de:'', fecha:'' })
+      }
+
       try {
-        if (!chunks.length) {
-          return resolve({ adjuntos: [], cuerpoHtml: '', cuerpoTexto: '', asunto: '', de: '', fecha: '' })
-        }
         const raw    = Buffer.concat(chunks)
         const parsed = await simpleParser(raw)
-        const adjuntos = (parsed.attachments || []).map(a => ({
-          nombre: a.filename   || 'adjunto',
-          tipo:   a.contentType,
-          datos:  a.content,
-        }))
+        console.log(`[IMAP] seq ${seqNo}: asunto="${parsed.subject}", adjuntos=${parsed.attachments?.length || 0}, bytes=${raw.length}`)
+
         resolve({
-          adjuntos,
+          adjuntos:    (parsed.attachments || []).map(a => ({
+            nombre: a.filename    || 'adjunto',
+            tipo:   a.contentType || 'application/octet-stream',
+            datos:  a.content,
+          })),
           cuerpoHtml:  parsed.html    || '',
           cuerpoTexto: parsed.text    || '',
           asunto:      parsed.subject || '',
@@ -97,15 +95,16 @@ const obtenerContenido = (imap, uid) => {
           fecha:       parsed.date?.toISOString() || '',
         })
       } catch (err) {
+        console.error(`[IMAP] Error parseando seq ${seqNo}:`, err.message)
         reject(err)
       }
     })
   })
 }
 
-const marcarLeido = (imap, uid) => {
+const marcarLeido = (imap, seqNo) => {
   return new Promise((resolve, reject) => {
-    imap.addFlags(uid, ['\\Seen'], (err) => {
+    imap.seq.addFlags(seqNo + ':' + seqNo, ['\\Seen'], (err) => {
       if (err) return reject(err)
       resolve()
     })
