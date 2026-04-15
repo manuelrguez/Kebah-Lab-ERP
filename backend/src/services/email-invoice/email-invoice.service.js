@@ -1,39 +1,27 @@
-/**
- * EMAIL INVOICE SERVICE
- * ─────────────────────────────────────────────────────────────
- * Servicio de alto nivel que integra el extractor con la app.
- * Gestiona configuraciones guardadas, cron jobs y el historial
- * de sincronizaciones.
- *
- * Este archivo es específico de Kebab Lab ERP.
- * El módulo /email-invoice/index.js es el reutilizable.
- */
-
 const cron      = require('node-cron')
 const extractor = require('./index.js')
 
-// Almacena los cron jobs activos por configuración
 const cronJobs = {}
 
-/**
- * Sincroniza un buzón y guarda las facturas encontradas en la DB.
- * @param {object} config - configuración de email guardada en DB
- * @param {object} empresaContext - { empresa_id, sequelize }
- */
 const sincronizar = async (config, empresaContext) => {
-  const { Factura, sequelize } = require('../../models/index.js')
+  const { Factura } = require('../../models/index.js')
   const resultado = { importadas: 0, duplicadas: 0, errores: 0, facturas: [] }
+
+  // BUG FIX: solo_no_leidos puede venir como booleano o string desde el frontend
+  // Si es undefined/null, default a FALSE para no perder emails ya leídos en tests
+  const soloNoLeidos = config.solo_no_leidos === true || config.solo_no_leidos === 'true'
 
   await extractor.sync({
     provider:    config.provider,
     credentials: config.credentials,
     options: {
       carpeta:      config.carpeta      || 'INBOX',
-      soloNoLeidos: config.solo_no_leidos !== false,
-      marcarLeido:  config.marcar_leido  !== false,
+      soloNoLeidos,                             // ← fix: era `!== false` que defaulteaba a true
+      marcarLeido:  config.marcar_leido === true || config.marcar_leido === 'true',
       maxEmails:    config.max_emails    || 50,
       filtros: {
-        asunto:      config.filtros_asunto || ['factura', 'invoice', 'recibo', 'albarán'],
+        asunto:      config.filtros_asunto?.length ? config.filtros_asunto
+                     : ['factura', 'invoice', 'recibo', 'albarán', 'receipt'],
         desde:       config.filtros_desde  || null,
         desde_fecha: config.filtros_desde_fecha ? new Date(config.filtros_desde_fecha) : null,
       },
@@ -41,7 +29,6 @@ const sincronizar = async (config, empresaContext) => {
 
     onFactura: async (factura, emailMeta) => {
       try {
-        // Evitar duplicados por número de factura
         if (factura.numero_factura) {
           const existe = await Factura.findOne({
             where: { numero: factura.numero_factura, empresa_id: empresaContext.empresa_id }
@@ -49,12 +36,14 @@ const sincronizar = async (config, empresaContext) => {
           if (existe) { resultado.duplicadas++; return }
         }
 
-        // Generar número correlativo si no tiene
         let numero = factura.numero_factura
         if (!numero) {
           const year = new Date().getFullYear()
           const last = await Factura.findOne({
-            where: { empresa_id: empresaContext.empresa_id, numero: { [require('sequelize').Op.like]: `FAC-${year}-%` } },
+            where: {
+              empresa_id: empresaContext.empresa_id,
+              numero: { [require('sequelize').Op.like]: `FAC-${year}-%` }
+            },
             order: [['numero', 'DESC']],
           })
           const seq = last ? parseInt(last.numero.split('-')[2]) + 1 : 1
@@ -95,15 +84,8 @@ const sincronizar = async (config, empresaContext) => {
   return resultado
 }
 
-// Inicia un cron job para sincronización automática.
-// configId: ID de la configuración
-// cronExpression: expresión cron de node-cron (ej: cada 4 horas)
-// syncFn: función a ejecutar
 const iniciarCron = (configId, cronExpression, syncFn) => {
-  // Detener el anterior si existe
-  if (cronJobs[configId]) {
-    cronJobs[configId].stop()
-  }
+  if (cronJobs[configId]) cronJobs[configId].stop()
 
   const job = cron.schedule(cronExpression, async () => {
     console.log(`[EmailInvoice] Sync automático — config ${configId}`)
@@ -112,7 +94,6 @@ const iniciarCron = (configId, cronExpression, syncFn) => {
   }, { timezone: 'Europe/Madrid' })
 
   cronJobs[configId] = job
-  console.log(`[EmailInvoice] Cron iniciado para config ${configId}: ${cronExpression}`)
   return job
 }
 
