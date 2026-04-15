@@ -1,3 +1,4 @@
+import EmailFacturas from './EmailFacturas.jsx'
 import { useState, useEffect, useRef } from 'react'
 import { formatCurrency, formatDate } from '../../utils/formatters.js'
 import api from '../../services/api.js'
@@ -457,6 +458,7 @@ const Facturas = () => {
 
   const TABS = [
     { key: 'todas',      label: 'Todas' },
+    { key: 'email',      label: '📬 Email' },
     { key: 'emitidas',   label: '↑ Emitidas' },
     { key: 'recibidas',  label: '↓ Recibidas' },
     { key: 'pendientes', label: '⏳ Pendientes' },
@@ -590,6 +592,11 @@ const Facturas = () => {
           </div>
         )}
       </div>
+
+      {/* Email tab */}
+      {tabFiltro === 'email' && (
+        <EmailFacturas />
+      )}
 
       {/* Modals */}
       {(modal === 'new' || (modal && modal.id)) && (

@@ -31,6 +31,7 @@ app.use('/api/rrhh',        require('./routes/rrhh.routes.js'))
 app.use('/api/facturacion', require('./routes/facturacion.routes.js'))
 app.use('/api/informes',    require('./routes/informes.routes.js'))
 app.use('/api/logs',        require('./routes/logs.routes.js'))
+app.use('/api/email-invoice', require('./routes/email-invoice.routes.js'))
 app.use('/api/ia',          require('./routes/ia.routes.js'))
 
 // ── Health check ──────────────────────────────────────────────────────────────

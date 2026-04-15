@@ -1,0 +1,12 @@
+REUTILIZAR EXTRACTOR FACTURAS CORREO EN OTRA APP
+
+- copiar index.js
+- copiar carpetas providers/ y extractors/
+- llamarlo así:
+
+const extractor = require('./email-invoice')
+const result = await extractor.sync({
+  provider: 'imap',
+  credentials: { host, port, usuario, password },
+  onFactura: async (factura) => { /* tu lógica */ }
+})
