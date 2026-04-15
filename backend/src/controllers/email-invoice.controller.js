@@ -152,7 +152,7 @@ exports.test = async (req, res) => {
     })
 
     const contenidos = []
-    for (const e of emails.slice(0, 2)) {
+    for (const e of emails.slice(-4)) {
       const c = await imapProvider.obtenerContenido(conexion, e.id)
       contenidos.push({
         id: e.id,
