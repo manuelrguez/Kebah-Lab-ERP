@@ -76,26 +76,18 @@ exports.syncDirecto = async (req, res) => {
       return res.status(400).json({ message: 'provider y credentials son obligatorios' })
     }
 
-    // Test conexión primero
-    const imapProvider = require('../services/email-invoice/providers/imap.provider.js')
-    const conexion = await imapProvider.conectar(credentials)
-    
-    // Listar emails directamente para debug
-    const emails = await imapProvider.listarEmails(conexion, {
-      carpeta: 'INBOX',
-      soloNoLeidos: false,
-      maxEmails: 10,
-      filtros: { asunto: [], desde: null, desde_fecha: null }
-    })
-    
-    await imapProvider.desconectar(conexion)
-    
-    return res.json({ 
-      debug: true,
-      emails_encontrados: emails.length,
-      email_ids: emails.map(e => e.id)
-    })
+    const config = {
+      provider,
+      credentials,
+      carpeta:         opciones?.carpeta        || 'INBOX',
+      solo_no_leidos:  opciones?.soloNoLeidos    === true,
+      marcar_leido:    opciones?.marcarLeido     === true,
+      max_emails:      opciones?.maxEmails       || 10,
+      filtros_asunto:  opciones?.filtros?.asunto || [],
+    }
 
+    const resultado = await emailInvoiceService.sincronizar(config, { empresa_id })
+    res.json({ success: true, ...resultado })
   } catch (err) {
     console.error(err)
     res.status(500).json({ message: `Error en sync: ${err.message}` })
