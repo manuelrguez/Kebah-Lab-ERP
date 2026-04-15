@@ -79,18 +79,24 @@ exports.syncDirecto = async (req, res) => {
     const config = {
       provider,
       credentials,
-      carpeta:         opciones?.carpeta        || 'INBOX',
-      solo_no_leidos:  opciones?.soloNoLeidos    === true,
-      marcar_leido:    opciones?.marcarLeido     === true,
-      max_emails:      opciones?.maxEmails       || 10,
-      filtros_asunto:  opciones?.filtros?.asunto || [],
+      carpeta:        opciones?.carpeta        || 'INBOX',
+      solo_no_leidos: opciones?.soloNoLeidos   === true,
+      marcar_leido:   opciones?.marcarLeido    === true,
+      max_emails:     opciones?.maxEmails      || 10,
+      filtros_asunto: opciones?.filtros?.asunto || [],
     }
 
-    const resultado = await emailInvoiceService.sincronizar(config, { empresa_id })
-    res.json({ success: true, ...resultado })
+    // Responder inmediatamente — el sync corre en background
+    res.json({ success: true, mensaje: 'Sync iniciado en background', importadas: 0, procesados: 0, duplicadas: 0, errores: 0, facturas: [] })
+
+    // Procesar en background sin bloquear la respuesta HTTP
+    emailInvoiceService.sincronizar(config, { empresa_id })
+      .then(r => console.log(`[EmailInvoice] Sync completado: ${r.importadas} importadas, ${r.errores} errores`))
+      .catch(e => console.error('[EmailInvoice] Error en sync background:', e.message))
+
   } catch (err) {
     console.error(err)
-    res.status(500).json({ message: `Error en sync: ${err.message}` })
+    if (!res.headersSent) res.status(500).json({ message: `Error en sync: ${err.message}` })
   }
 }
 

@@ -114,13 +114,7 @@ const EmailFacturas = () => {
       })
 
       setResultado(res.data)
-      if (res.data.importadas > 0) {
-        toast.success(`✅ ${res.data.importadas} facturas importadas`)
-      } else if (res.data.procesados > 0) {
-        toast(`📭 ${res.data.procesados} emails revisados, ninguna factura nueva`, { icon: 'ℹ️' })
-      } else {
-        toast(`📭 No se encontraron emails con los filtros indicados`, { icon: 'ℹ️' })
-      }
+      toast.success('✅ Sync iniciado — las facturas aparecerán en Facturación en 1-2 minutos')
 
       // Add to history
       setHistorial(prev => [{
