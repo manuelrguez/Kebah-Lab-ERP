@@ -21,7 +21,7 @@ const cronJobs = {}
  * @param {object} empresaContext - { empresa_id, sequelize }
  */
 const sincronizar = async (config, empresaContext) => {
-  const { Factura, sequelize } = require('../models/index.js')
+  const { Factura, sequelize } = require('../../models/index.js')
   const resultado = { importadas: 0, duplicadas: 0, errores: 0, facturas: [] }
 
   await extractor.sync({
