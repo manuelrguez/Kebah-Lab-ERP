@@ -30,7 +30,10 @@ const listarEmails = (imap, opts) => {
         criteria.push(['FROM', opts.filtros.desde])
       }
       if (opts.filtros?.desde_fecha) {
-        criteria.push(['SINCE', opts.filtros.desde_fecha])
+        const d = new Date(opts.filtros.desde_fecha)
+        const meses = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+        const fechaImap = `${d.getDate()}-${meses[d.getMonth()]}-${d.getFullYear()}`
+        criteria.push(['SINCE', fechaImap])
       }
 
       imap.search(criteria, (err, seqNums) => {
