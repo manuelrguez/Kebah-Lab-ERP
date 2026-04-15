@@ -95,12 +95,10 @@ const sincronizar = async (config, empresaContext) => {
   return resultado
 }
 
-/**
- * Inicia un cron job para sincronización automática.
- * @param {string} configId - ID de la configuración
- * @param {string} cronExpression - expresión cron (ej: '0 */4 * * *' = cada 4h)
- * @param {Function} syncFn - función a ejecutar
- */
+// Inicia un cron job para sincronización automática.
+// configId: ID de la configuración
+// cronExpression: expresión cron de node-cron (ej: cada 4 horas)
+// syncFn: función a ejecutar
 const iniciarCron = (configId, cronExpression, syncFn) => {
   // Detener el anterior si existe
   if (cronJobs[configId]) {
