@@ -143,7 +143,24 @@ const sync = async (config = {}) => {
         resultados.procesados++
 
         // Obtener adjuntos y cuerpo del email
-        const { adjuntos, cuerpoHtml, cuerpoTexto } = await provider.obtenerContenido(conexion, emailMeta.id)
+        const { adjuntos, cuerpoHtml, cuerpoTexto, asunto, de, fecha } = await provider.obtenerContenido(conexion, emailMeta.id)
+
+        // Enriquecer emailMeta con datos reales del email
+        emailMeta.asunto = asunto || emailMeta.asunto || ''
+        emailMeta.de     = de    || emailMeta.de    || ''
+        emailMeta.fecha  = fecha || emailMeta.fecha  || ''
+
+        // Filtrar por asunto en JS (más fiable que filtros IMAP complejos)
+        const filtrosAsunto = opts.filtros?.asunto || []
+        if (filtrosAsunto.length > 0) {
+          const asuntoLower = (asunto || '').toLowerCase()
+          const coincide = filtrosAsunto.some(f => asuntoLower.includes(f.toLowerCase()))
+          if (!coincide) {
+            console.log(`[EmailInvoice] Email ignorado (asunto no coincide): "${asunto}"`)
+            resultados.procesados-- // no contar como procesado
+            continue
+          }
+        }
 
         const facturasEmail = []
 
