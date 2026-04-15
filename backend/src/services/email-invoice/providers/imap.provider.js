@@ -52,11 +52,11 @@ const listarEmails = (imap, opts) => {
   })
 }
 
-const obtenerContenido = (imap, seqNum) => {
+const obtenerContenido = (imap, uid) => {
   return new Promise((resolve, reject) => {
-    // Usar sequence number directamente (número, no string ni array de string)
-    const fetch = imap.seq.fetch(`${seqNum}`, {
-      bodies:   '',      // cuerpo completo (headers + body)
+    // Usar UID fetch, no sequence number fetch
+    const fetch = imap.fetch(uid, {
+      bodies:   '',
       struct:   true,
       markSeen: false,
     })
@@ -77,24 +77,17 @@ const obtenerContenido = (imap, seqNum) => {
     fetch.once('end', async () => {
       if (resolved) return
       resolved = true
-
       try {
         if (!chunks.length) {
-          console.warn(`[IMAP] Email seq ${seqNum}: sin datos en buffer`)
           return resolve({ adjuntos: [], cuerpoHtml: '', cuerpoTexto: '', asunto: '', de: '', fecha: '' })
         }
-
         const raw    = Buffer.concat(chunks)
         const parsed = await simpleParser(raw)
-
-        console.log(`[IMAP] Email seq ${seqNum}: asunto="${parsed.subject}", adjuntos=${parsed.attachments?.length || 0}`)
-
         const adjuntos = (parsed.attachments || []).map(a => ({
           nombre: a.filename   || 'adjunto',
           tipo:   a.contentType,
-          datos:  a.content,   // Buffer binario
+          datos:  a.content,
         }))
-
         resolve({
           adjuntos,
           cuerpoHtml:  parsed.html    || '',
@@ -104,16 +97,15 @@ const obtenerContenido = (imap, seqNum) => {
           fecha:       parsed.date?.toISOString() || '',
         })
       } catch (err) {
-        console.error(`[IMAP] Error parseando email seq ${seqNum}:`, err.message)
         reject(err)
       }
     })
   })
 }
 
-const marcarLeido = (imap, seqNum) => {
+const marcarLeido = (imap, uid) => {
   return new Promise((resolve, reject) => {
-    imap.seq.addFlags(`${seqNum}`, ['\\Seen'], (err) => {
+    imap.addFlags(uid, ['\\Seen'], (err) => {
       if (err) return reject(err)
       resolve()
     })
