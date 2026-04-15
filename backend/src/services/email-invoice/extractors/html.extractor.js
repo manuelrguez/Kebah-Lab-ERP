@@ -8,7 +8,7 @@
  * Limpia el HTML antes de enviarlo a Claude para reducir tokens.
  */
 
-const { getClient } = require('../../config/anthropic.js')
+const { getClient } = require('../../../config/anthropic.js')
 
 const PROMPT_EXTRACCION = `El siguiente texto es el contenido de un email.
 Analízalo y extrae datos de factura si los contiene.

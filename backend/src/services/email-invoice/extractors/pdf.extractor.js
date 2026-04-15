@@ -6,7 +6,7 @@
  * que tiene capacidad nativa de leer PDFs.
  */
 
-const { getClient } = require('../../config/anthropic.js')
+const { getClient } = require('../../../config/anthropic.js')
 
 const PROMPT_EXTRACCION = `Analiza este documento PDF y extrae los datos de factura que encuentres.
 Si no es una factura o no contiene datos de factura, devuelve null.
