@@ -19,6 +19,7 @@ import InformesIA from './pages/Informes/InformesIA.jsx'
 import AsistenteIA from './pages/AsistenteIA/AsistenteIA.jsx'
 import Perfil from './pages/Configuracion/Perfil.jsx'
 import LogsPage from './pages/Configuracion/Logs.jsx'
+import ConfiguracionEmail from './pages/Configuracion/ConfiguracionEmail.jsx'
 
 // Route wrapper with Layout
 const Page = ({ component: Component, title, breadcrumb, module }) => (
