@@ -46,7 +46,7 @@ const EmailFacturas = () => {
     setResultado(null)
 
     try {
-      res = await api.post('/email-invoice/sync-guardado', {
+      const res = await api.post('/email-invoice/sync-guardado', {
         max_emails:     parseInt(maxEmails),
         filtros_asunto: filtrosAsunto,
       })
