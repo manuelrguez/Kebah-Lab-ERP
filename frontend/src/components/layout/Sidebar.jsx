@@ -33,9 +33,10 @@ const Sidebar = () => {
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <div className="logo-icon">K</div>
+        <img src="/logo-kebablab.png" alt="Kebah! Lab"
+          style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
         <div>
-          <div className="logo-name">Kebab Lab</div>
+          <div className="logo-name">Kebah! Lab</div>
           <div className="logo-sub">ERP Suite</div>
         </div>
       </div>
