@@ -126,7 +126,7 @@ exports.deleteConfig = async (req, res) => {
 exports.syncGuardado = async (req, res) => {
   try {
     const { tenant } = req
-    const empresa_id = tenant.empresa_id || req.user.empresa_id || req.user.id
+    const empresa_id = tenant?.empresa_id || req.user?.empresa_id || 1
     const { max_emails, filtros_asunto } = req.body
 
     const getCredentials = require('./email-config.controller.js').getCredentials
