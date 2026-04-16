@@ -136,32 +136,21 @@ exports.deleteConfig = async (req, res) => {
 
 exports.test = async (req, res) => {
   try {
-    const { usuario, password } = req.query
-    if (!usuario || !password) {
-      return res.status(400).json({ message: 'Faltan usuario y password' })
-    }
-
-    const imapProvider = require('../services/email-invoice/providers/imap.provider.js')
-    const conexion = await imapProvider.conectar({
-      host: 'imap.gmail.com', port: 993, tls: true, usuario, password
-    })
-
+    const { usuario, password, max = 5 } = req.query
+    // ...
     const emails = await imapProvider.listarEmails(conexion, {
-      carpeta: 'INBOX', soloNoLeidos: false, maxEmails: 5,
+      carpeta: 'INBOX', soloNoLeidos: false, maxEmails: parseInt(max),
       filtros: { asunto: [], desde: null, desde_fecha: null }
     })
-
+    // mostrar todos, no solo los últimos 4
     const contenidos = []
-    for (const e of emails.slice(-4)) {
+    for (const e of emails) {
       const c = await imapProvider.obtenerContenido(conexion, e.id, e)
       contenidos.push({
-        id:       e.id,
-        asunto:   c.asunto,
-        de:       c.de,
+        id: e.id, asunto: c.asunto, de: c.de,
         adjuntos: c.adjuntos.map(a => ({ nombre: a.nombre, tipo: a.tipo, bytes: a.datos?.length }))
       })
     }
-
     await imapProvider.desconectar(conexion)
     res.json({ emails_encontrados: emails.length, emails: contenidos })
   } catch (err) {
