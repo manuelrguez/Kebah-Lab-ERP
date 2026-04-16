@@ -4,7 +4,7 @@ const { encrypt, decrypt } = require('../helpers/crypto.helper.js')
 // GET /api/email-config — obtener config de la empresa (sin password)
 exports.getConfig = async (req, res) => {
   try {
-    const empresa_id = req.user.empresa_id || req.tenant.empresa_id
+    const empresa_id = req.tenant?.empresa_id || req.user?.empresa_id || 1
     const config = await EmailConfig.findOne({ where: { empresa_id } })
     if (!config) return res.json(null)
 
@@ -30,8 +30,8 @@ exports.getConfig = async (req, res) => {
 // POST /api/email-config — guardar/actualizar config
 exports.saveConfig = async (req, res) => {
   try {
-    const empresa_id = req.user.empresa_id || req.tenant.empresa_id
-    if (!empresa_id) return res.status(400).json({ message: 'empresa_id requerido' })
+    const empresa_id = req.tenant?.empresa_id || req.user?.empresa_id || 1
+    //if (!empresa_id) return res.status(400).json({ message: 'empresa_id requerido' })
 
     const { provider, host, port, tls, usuario, password, carpeta, filtros_asunto } = req.body
     if (!usuario || !password) {
@@ -59,7 +59,7 @@ exports.saveConfig = async (req, res) => {
 // DELETE /api/email-config — eliminar config
 exports.deleteConfig = async (req, res) => {
   try {
-    const empresa_id = req.user.empresa_id || req.tenant.empresa_id
+    const empresa_id = req.tenant?.empresa_id || req.user?.empresa_id || 1
     await EmailConfig.destroy({ where: { empresa_id } })
     res.json({ success: true })
   } catch (err) {
@@ -70,7 +70,7 @@ exports.deleteConfig = async (req, res) => {
 // POST /api/email-config/test — probar conexión
 exports.testConexion = async (req, res) => {
   try {
-    const empresa_id = req.user.empresa_id || req.tenant.empresa_id
+    const empresa_id = req.tenant?.empresa_id || req.user?.empresa_id || 1
     const config = await EmailConfig.findOne({ where: { empresa_id } })
     if (!config) return res.status(404).json({ message: 'No hay configuración guardada' })
 
