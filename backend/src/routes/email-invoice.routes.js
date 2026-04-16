@@ -10,7 +10,7 @@ router.get('/configs',                ctrl.getConfigs)
 router.post('/config',                ctrl.saveConfig)
 router.delete('/config/:configId',    ctrl.deleteConfig)
 router.post('/sync/:configId',        ctrl.syncManual)
+router.post('/sync-guardado',         ctrl.syncGuardado)
 router.post('/sync-directo',          ctrl.syncDirecto)
-router.get('/test', ctrl.test)
 
 module.exports = router

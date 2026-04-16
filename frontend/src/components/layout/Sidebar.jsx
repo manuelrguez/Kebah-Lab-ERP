@@ -3,7 +3,7 @@ import { useAuth } from '../../hooks/useAuth.js'
 import {
   LayoutDashboard, Map, Store, CreditCard, Bike,
   Users, DollarSign, FileText, BarChart3, Bot,
-  Settings, LogOut, ScrollText
+  Settings, LogOut, ScrollText, Mail
 } from 'lucide-react'
 
 const NAV = [
@@ -22,9 +22,9 @@ const NAV = [
   { section: 'HERRAMIENTAS' },
   { to: '/informes',    label: 'Informes IA',  icon: BarChart3,       module: 'informes', badge: 'IA' },
   { to: '/asistente',   label: 'Asistente IA', icon: Bot,             module: 'asistente', badge: 'Nuevo' },
-  { section: 'SISTEMA' },
+  { to: '/email-config', label: 'Correo',  icon: Mail, module: 'configuracion' },
   { to: '/logs',         label: 'Logs',          icon: ScrollText,     module: 'logs'          },
-  { to: '/configuracion',label: 'Configuración', icon: Settings,       module: 'configuracion' },
+  { to: '/configuracion',label: 'Configuración',icon: Settings,       module: 'configuracion' },
 ]
 
 const Sidebar = () => {
@@ -33,10 +33,9 @@ const Sidebar = () => {
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <img src="/logo-kebablab.png" alt="Kebah! Lab"
-          style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
+        <div className="logo-icon">K</div>
         <div>
-          <div className="logo-name">Kebah! Lab</div>
+          <div className="logo-name">Kebab Lab</div>
           <div className="logo-sub">ERP Suite</div>
         </div>
       </div>
@@ -68,7 +67,7 @@ const Sidebar = () => {
           <LogOut size={16} />
           <span>Cerrar sesión</span>
         </button>
-        <div className="sidebar-version">Kebah Lab ERP v1.0</div>
+        <div className="sidebar-version">Kebab Lab ERP v1.0</div>
       </div>
     </aside>
   )

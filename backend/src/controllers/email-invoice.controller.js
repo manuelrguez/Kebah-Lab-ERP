@@ -69,7 +69,7 @@ exports.syncManual = async (req, res) => {
 exports.syncDirecto = async (req, res) => {
   try {
     const { tenant } = req
-    const empresa_id = tenant.empresa_id || req.user.empresa_id || 1
+    const empresa_id = tenant.empresa_id || req.user.empresa_id
     const { provider, credentials, opciones } = req.body
 
     if (!provider || !credentials) {
@@ -79,24 +79,14 @@ exports.syncDirecto = async (req, res) => {
     const config = {
       provider,
       credentials,
-      carpeta:        opciones?.carpeta        || 'INBOX',
-      solo_no_leidos: opciones?.soloNoLeidos   === true,
-      marcar_leido:   opciones?.marcarLeido    === true,
-      max_emails:     opciones?.maxEmails      || 10,
-      filtros_asunto: opciones?.filtros?.asunto || [],
+      ...(opciones || {}),
     }
 
-    // Responder INMEDIATAMENTE — no esperar al sync
-    res.json({ success: true, mensaje: 'Sync iniciado', importadas: 0, procesados: 0, duplicadas: 0, errores: 0, facturas: [] })
-
-    // Procesar en background
-    emailInvoiceService.sincronizar(config, { empresa_id })
-      .then(r => console.log(`[EmailInvoice] Completado: ${r.importadas} importadas, ${r.errores} errores`))
-      .catch(e => console.error('[EmailInvoice] Error background:', e.message, e.stack))
-
+    const resultado = await emailInvoiceService.sincronizar(config, { empresa_id })
+    res.json({ success: true, ...resultado })
   } catch (err) {
     console.error(err)
-    if (!res.headersSent) res.status(500).json({ message: `Error: ${err.message}` })
+    res.status(500).json({ message: `Error en sync: ${err.message}` })
   }
 }
 
@@ -132,38 +122,37 @@ exports.deleteConfig = async (req, res) => {
   }
 }
 
-
-
-exports.test = async (req, res) => {
+// POST /api/email-invoice/sync-guardado — sync usando config guardada en DB
+exports.syncGuardado = async (req, res) => {
   try {
-    const { usuario, password, max = 10 } = req.query
-    if (!usuario || !password) {
-      return res.status(400).json({ message: 'Faltan usuario y password' })
+    const { tenant } = req
+    const empresa_id = tenant.empresa_id || req.user.empresa_id || req.user.id
+    const { max_emails, filtros_asunto } = req.body
+
+    const getCredentials = require('./email-config.controller.js').getCredentials
+    const credentials = await getCredentials(empresa_id)
+    if (!credentials) {
+      return res.status(404).json({ message: 'No hay configuración de correo guardada. Ve a Configuración → Correo.' })
     }
 
-    const imapProvider = require('../services/email-invoice/providers/imap.provider.js')
-    
-    const conexion = await imapProvider.conectar({
-      host: 'imap.gmail.com', port: 993, tls: true, usuario, password
-    })
-
-    const emails = await imapProvider.listarEmails(conexion, {
-      carpeta: 'INBOX', soloNoLeidos: false, maxEmails: parseInt(max),
-      filtros: { asunto: [], desde: null, desde_fecha: null }
-    })
-
-    const contenidos = []
-    for (const e of emails) {
-      const c = await imapProvider.obtenerContenido(conexion, e.id, e)
-      contenidos.push({
-        id: e.id, asunto: c.asunto, de: c.de,
-        adjuntos: c.adjuntos.map(a => ({ nombre: a.nombre, tipo: a.tipo, bytes: a.datos?.length }))
-      })
+    const config = {
+      provider:       credentials.provider,
+      credentials:    { host: credentials.host, port: credentials.port, tls: credentials.tls, usuario: credentials.usuario, password: credentials.password },
+      carpeta:        credentials.carpeta,
+      solo_no_leidos: false,
+      marcar_leido:   false,
+      max_emails:     max_emails || 20,
+      filtros_asunto: filtros_asunto?.length ? filtros_asunto : (credentials.filtros_asunto || []),
     }
 
-    await imapProvider.desconectar(conexion)
-    res.json({ emails_encontrados: emails.length, emails: contenidos })
+    res.json({ success: true, mensaje: 'Sync iniciado', importadas: 0, procesados: 0, duplicadas: 0, errores: 0, facturas: [] })
+
+    emailInvoiceService.sincronizar(config, { empresa_id })
+      .then(r => console.log(`[EmailInvoice] Sync guardado completado: ${r.importadas} importadas`))
+      .catch(e => console.error('[EmailInvoice] Error sync guardado:', e.message))
+
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    console.error(err)
+    if (!res.headersSent) res.status(500).json({ message: `Error: ${err.message}` })
   }
 }
