@@ -69,7 +69,7 @@ exports.syncManual = async (req, res) => {
 exports.syncDirecto = async (req, res) => {
   try {
     const { tenant } = req
-    const empresa_id = tenant.empresa_id || req.user.empresa_id
+    const empresa_id = tenant.empresa_id || req.user.empresa_id || 1
     const { provider, credentials, opciones } = req.body
 
     if (!provider || !credentials) {
@@ -79,14 +79,24 @@ exports.syncDirecto = async (req, res) => {
     const config = {
       provider,
       credentials,
-      ...(opciones || {}),
+      carpeta:        opciones?.carpeta        || 'INBOX',
+      solo_no_leidos: opciones?.soloNoLeidos   === true,
+      marcar_leido:   opciones?.marcarLeido    === true,
+      max_emails:     opciones?.maxEmails      || 10,
+      filtros_asunto: opciones?.filtros?.asunto || [],
     }
 
-    const resultado = await emailInvoiceService.sincronizar(config, { empresa_id })
-    res.json({ success: true, ...resultado })
+    // Responder INMEDIATAMENTE — no esperar al sync
+    res.json({ success: true, mensaje: 'Sync iniciado', importadas: 0, procesados: 0, duplicadas: 0, errores: 0, facturas: [] })
+
+    // Procesar en background
+    emailInvoiceService.sincronizar(config, { empresa_id })
+      .then(r => console.log(`[EmailInvoice] Completado: ${r.importadas} importadas, ${r.errores} errores`))
+      .catch(e => console.error('[EmailInvoice] Error background:', e.message, e.stack))
+
   } catch (err) {
     console.error(err)
-    res.status(500).json({ message: `Error en sync: ${err.message}` })
+    if (!res.headersSent) res.status(500).json({ message: `Error: ${err.message}` })
   }
 }
 
