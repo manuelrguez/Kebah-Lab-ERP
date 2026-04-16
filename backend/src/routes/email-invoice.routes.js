@@ -11,6 +11,6 @@ router.post('/config',                ctrl.saveConfig)
 router.delete('/config/:configId',    ctrl.deleteConfig)
 router.post('/sync/:configId',        ctrl.syncManual)
 router.post('/sync-directo',          ctrl.syncDirecto)
-router.get('/test', ctrl.test)
+//router.get('/test', ctrl.test)
 
 module.exports = router
