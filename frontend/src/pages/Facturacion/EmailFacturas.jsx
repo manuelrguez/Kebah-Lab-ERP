@@ -86,10 +86,10 @@ const EmailFacturas = () => {
       toast.error(`Faltan campos: ${missingFields.map(f => f.label).join(', ')}`)
       return
     }
-    if (!opciones.filtrosAsunto.length) {
+    /*if (!opciones.filtrosAsunto.length) {
       toast.error('Añade al menos un filtro de asunto')
       return
-    }
+    }*/
 
     setSyncing(true)
     setResultado(null)
