@@ -1,113 +1,118 @@
-const Imap             = require('imap')
+const imapSimple       = require('imap-simple')
 const { simpleParser } = require('mailparser')
 
-const conectar = (credentials) => {
-  return new Promise((resolve, reject) => {
-    const imap = new Imap({
+const conectar = async (credentials) => {
+  const config = {
+    imap: {
       user:        credentials.usuario,
       password:    credentials.password,
-      host:        credentials.host,
-      port:        credentials.port || 993,
-      tls:         credentials.tls !== false,
+      host:        credentials.host     || 'imap.gmail.com',
+      port:        credentials.port     || 993,
+      tls:         credentials.tls      !== false,
       tlsOptions:  { rejectUnauthorized: false },
-      connTimeout: 20000,
       authTimeout: 15000,
-    })
-    imap.once('ready', () => resolve(imap))
-    imap.once('error', reject)
-    imap.connect()
-  })
+    }
+  }
+  const connection = await imapSimple.connect(config)
+  return connection
 }
 
-const listarEmails = (imap, opts) => {
-  return new Promise((resolve, reject) => {
-    imap.openBox(opts.carpeta || 'INBOX', false, (err, box) => {
-      if (err) return reject(err)
-      if (box.messages.total === 0) return resolve([])
+const listarEmails = async (connection, opts) => {
+  await connection.openBox(opts.carpeta || 'INBOX')
 
-      const criteria = opts.soloNoLeidos ? ['UNSEEN'] : ['ALL']
-      if (opts.filtros?.desde) criteria.push(['FROM', opts.filtros.desde])
+  const searchCriteria = opts.soloNoLeidos ? ['UNSEEN'] : ['ALL']
+  if (opts.filtros?.desde) searchCriteria.push(['FROM', opts.filtros.desde])
+  if (opts.filtros?.desde_fecha) {
+    const d     = new Date(opts.filtros.desde_fecha)
+    const meses = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+    searchCriteria.push(['SINCE', `${d.getDate()}-${meses[d.getMonth()]}-${d.getFullYear()}`])
+  }
 
-      // Buscar por UID usando el método UID search
-      imap.search(criteria, (err, results) => {
-        if (err) return reject(err)
-        if (!results?.length) return resolve([])
+  // Traer solo headers para el listado — rápido
+  const fetchOptions = {
+    bodies:   ['HEADER.FIELDS (FROM TO SUBJECT DATE)'],
+    struct:   true,
+    markSeen: false,
+  }
 
-        const limited = results.slice(-(opts.maxEmails || 20))
-        console.log(`[IMAP] ${results.length} results, limitando a ${limited.length}`)
-        resolve(limited.map(n => ({ id: n })))
-      })
-    })
-  })
-}
+  const messages = await connection.search(searchCriteria, fetchOptions)
+  console.log(`[IMAP] ${messages.length} emails encontrados`)
 
-const obtenerContenido = (imap, seqNo) => {
-  return new Promise((resolve, reject) => {
-    const chunks = []
-    let resolved = false
+  const limited = messages.slice(-(opts.maxEmails || 20))
 
-    // Intentar con seq.fetch usando rango de 1
-    const f = imap.seq.fetch(`${seqNo}`, {
-      bodies: '',
-      struct: true,
-    })
-
-    f.on('message', (msg, seqno) => {
-      console.log(`[IMAP] Procesando mensaje seqno=${seqno}`)
-      msg.on('body', (stream, info) => {
-        const c = []
-        stream.on('data', d => c.push(d))
-        stream.once('end', () => chunks.push(...c))
-      })
-      msg.once('attributes', attrs => {
-        console.log(`[IMAP] attrs uid=${attrs.uid}, size=${attrs.size}`)
-      })
-    })
-
-    f.once('error', err => { if (!resolved) { resolved = true; reject(err) } })
-    f.once('end', async () => {
-      if (resolved) return
-      resolved = true
-      if (!chunks.length) {
-        console.warn(`[IMAP] seq ${seqNo}: 0 chunks`)
-        return resolve({ adjuntos:[], cuerpoHtml:'', cuerpoTexto:'', asunto:'', de:'', fecha:'' })
-      }
-      try {
-        const raw = Buffer.concat(chunks.map(c => Buffer.isBuffer(c) ? c : Buffer.from(c)))
-        console.log(`[IMAP] seq ${seqNo}: ${raw.length} bytes`)
-        const parsed = await simpleParser(raw)
-        console.log(`[IMAP] seq ${seqNo}: subject="${parsed.subject}"`)
-        resolve({
-          adjuntos:    (parsed.attachments || []).map(a => ({ nombre: a.filename || 'adjunto', tipo: a.contentType, datos: a.content })),
-          cuerpoHtml:  parsed.html    || '',
-          cuerpoTexto: parsed.text    || '',
-          asunto:      parsed.subject || '',
-          de:          parsed.from?.text || '',
-          fecha:       parsed.date?.toISOString() || '',
-        })
-      } catch (e) { reject(e) }
-    })
-  })
-}
-
-const marcarLeido = (imap, seqNo) => {
-  return new Promise((resolve, reject) => {
-    imap.seq.addFlags(seqNo + ':' + seqNo, ['\\Seen'], (err) => {
-      if (err) return reject(err)
-      resolve()
-    })
-  })
-}
-
-const desconectar = (imap) => {
-  return new Promise(resolve => {
-    try {
-      imap.once('end', resolve)
-      imap.end()
-    } catch {
-      resolve()
+  return limited.map(msg => {
+    const headerPart = msg.parts.find(p => p.which.includes('HEADER'))
+    const headers    = headerPart?.body || {}
+    return {
+      id:     msg.attributes.uid,
+      asunto: Array.isArray(headers.subject) ? headers.subject[0] : (headers.subject || ''),
+      de:     Array.isArray(headers.from)    ? headers.from[0]    : (headers.from    || ''),
+      fecha:  Array.isArray(headers.date)    ? headers.date[0]    : (headers.date    || ''),
+      _uid:   msg.attributes.uid,
     }
   })
+}
+
+const obtenerContenido = async (connection, emailId, emailMeta) => {
+  try {
+    const uid = emailMeta?._uid || emailId
+    console.log(`[IMAP] Fetching UID=${uid}, asunto="${emailMeta?.asunto}"`)
+
+    // Fetch completo por UID
+    const messages = await connection.search(
+      [['UID', String(uid)]],
+      { bodies: [''], struct: true, markSeen: false }
+    )
+
+    if (!messages.length) {
+      console.warn(`[IMAP] No encontrado UID=${uid}`)
+      return { adjuntos:[], cuerpoHtml:'', cuerpoTexto:'', asunto: emailMeta?.asunto||'', de: emailMeta?.de||'', fecha: emailMeta?.fecha||'' }
+    }
+
+    const msg  = messages[0]
+    const part = msg.parts.find(p => p.which === '')
+
+    if (!part?.body) {
+      console.warn(`[IMAP] Cuerpo vacío UID=${uid}`)
+      return { adjuntos:[], cuerpoHtml:'', cuerpoTexto:'', asunto: emailMeta?.asunto||'', de: emailMeta?.de||'', fecha: emailMeta?.fecha||'' }
+    }
+
+    const raw    = Buffer.isBuffer(part.body) ? part.body : Buffer.from(part.body)
+    console.log(`[IMAP] UID=${uid}: ${raw.length} bytes`)
+
+    const parsed = await simpleParser(raw)
+    console.log(`[IMAP] UID=${uid}: subject="${parsed.subject}", adjuntos=${parsed.attachments?.length||0}`)
+
+    return {
+      adjuntos: (parsed.attachments || []).map(a => ({
+        nombre: a.filename    || 'adjunto',
+        tipo:   a.contentType || 'application/octet-stream',
+        datos:  a.content,
+      })),
+      cuerpoHtml:  parsed.html    || '',
+      cuerpoTexto: parsed.text    || '',
+      asunto:      parsed.subject || emailMeta?.asunto || '',
+      de:          parsed.from?.text || emailMeta?.de || '',
+      fecha:       parsed.date?.toISOString() || emailMeta?.fecha || '',
+    }
+  } catch (err) {
+    console.error(`[IMAP] Error obteniendo contenido UID=${emailMeta?._uid}:`, err.message)
+    return { adjuntos:[], cuerpoHtml:'', cuerpoTexto:'', asunto: emailMeta?.asunto||'', de: emailMeta?.de||'', fecha: emailMeta?.fecha||'' }
+  }
+}
+
+const marcarLeido = async (connection, emailId, emailMeta) => {
+  try {
+    const uid = emailMeta?._uid || emailId
+    // imap-simple usa addFlags con la búsqueda UID
+    await connection.search([['UID', String(uid)]], { bodies: [], markSeen: true })
+  } catch (err) {
+    console.error('[IMAP] Error marcando leído:', err.message)
+  }
+}
+
+const desconectar = async (connection) => {
+  try { connection.end() } catch {}
 }
 
 module.exports = { conectar, listarEmails, obtenerContenido, marcarLeido, desconectar }

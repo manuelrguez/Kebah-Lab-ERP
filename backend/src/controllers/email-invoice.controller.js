@@ -69,7 +69,7 @@ exports.syncManual = async (req, res) => {
 exports.syncDirecto = async (req, res) => {
   try {
     const { tenant } = req
-    const empresa_id = tenant.empresa_id || req.user.empresa_id || 1
+    const empresa_id = tenant.empresa_id || req.user.empresa_id
     const { provider, credentials, opciones } = req.body
 
     if (!provider || !credentials) {
@@ -79,24 +79,14 @@ exports.syncDirecto = async (req, res) => {
     const config = {
       provider,
       credentials,
-      carpeta:        opciones?.carpeta        || 'INBOX',
-      solo_no_leidos: opciones?.soloNoLeidos   === true,
-      marcar_leido:   opciones?.marcarLeido    === true,
-      max_emails:     opciones?.maxEmails      || 10,
-      filtros_asunto: opciones?.filtros?.asunto || [],
+      ...(opciones || {}),
     }
 
-    // Responder inmediatamente — el sync corre en background
-    res.json({ success: true, mensaje: 'Sync iniciado en background', importadas: 0, procesados: 0, duplicadas: 0, errores: 0, facturas: [] })
-
-    // Procesar en background sin bloquear la respuesta HTTP
-    emailInvoiceService.sincronizar(config, { empresa_id })
-      .then(r => console.log(`[EmailInvoice] Sync completado: ${r.importadas} importadas, ${r.errores} errores`))
-      .catch(e => console.error('[EmailInvoice] Error en sync background:', e.message))
-
+    const resultado = await emailInvoiceService.sincronizar(config, { empresa_id })
+    res.json({ success: true, ...resultado })
   } catch (err) {
     console.error(err)
-    if (!res.headersSent) res.status(500).json({ message: `Error en sync: ${err.message}` })
+    res.status(500).json({ message: `Error en sync: ${err.message}` })
   }
 }
 
@@ -129,42 +119,5 @@ exports.deleteConfig = async (req, res) => {
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ message: 'Error al eliminar configuración' })
-  }
-}
-
-
-
-exports.test = async (req, res) => {
-  try {
-    const { usuario, password } = req.query
-    if (!usuario || !password) {
-      return res.status(400).json({ message: 'Faltan usuario y password como query params' })
-    }
-
-    const imapProvider = require('../services/email-invoice/providers/imap.provider.js')
-    const conexion = await imapProvider.conectar({
-      host: 'imap.gmail.com', port: 993, tls: true, usuario, password
-    })
-
-    const emails = await imapProvider.listarEmails(conexion, {
-      carpeta: 'INBOX', soloNoLeidos: false, maxEmails: 5,
-      filtros: { asunto: [], desde: null, desde_fecha: null }
-    })
-
-    const contenidos = []
-    for (const e of emails.slice(-4)) {
-      const c = await imapProvider.obtenerContenido(conexion, e.id)
-      contenidos.push({
-        id: e.id,
-        asunto: c.asunto,
-        de: c.de,
-        adjuntos: c.adjuntos.map(a => ({ nombre: a.nombre, tipo: a.tipo, bytes: a.datos?.length }))
-      })
-    }
-
-    await imapProvider.desconectar(conexion)
-    res.json({ emails_encontrados: emails.length, primeros_dos: contenidos })
-  } catch (err) {
-    res.status(500).json({ error: err.message })
   }
 }
