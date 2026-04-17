@@ -5,7 +5,7 @@ import toast from 'react-hot-toast'
 
 const FILTROS_PRESET = ['factura', 'invoice', 'recibo', 'albarán', 'receipt', 'nota de cargo']
 
-const EmailFacturas = () => {
+const EmailFacturas = ({ onFacturasImportadas }) => {
   const [config, setConfig]           = useState(null)
   const [loadingConfig, setLoadingConfig] = useState(true)
   const [syncing, setSyncing]         = useState(false)
@@ -52,6 +52,7 @@ const EmailFacturas = () => {
       })
 
       toast.success('✅ Sync iniciado — las facturas aparecerán en 1-2 minutos')
+      if (onFacturasImportadas) setTimeout(onFacturasImportadas, 3000) // recarga tras 3 min
       setHistorial(prev => [{
         ts: new Date(), procesados: 0, importadas: 0, duplicadas: 0, errores: 0
       }, ...prev.slice(0, 9)])

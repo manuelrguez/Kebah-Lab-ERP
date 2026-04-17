@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 const ESTADOS = ['activo', 'baja', 'vacaciones']
 const TIPOS_CONTRATO = ['indefinido', 'temporal', 'practicas']
 const DEPARTAMENTOS = ['Cocina', 'Sala', 'Gestión', 'Limpieza', 'Reparto', 'Administración']
+const LIMIT = 15
 
 const ModalEmpleado = ({ empleado, franquicias, onClose, onSaved }) => {
   const isEdit = !!empleado?.id
@@ -140,21 +141,22 @@ const ESTADO_STYLE = {
 }
 
 const Personal = () => {
-  const [tab, setTab]             = useState('empleados') // 'empleados' | 'nominas' | 'cvs'
+  const [tab, setTab]             = useState('empleados')
   const [empleados, setEmpleados] = useState([])
   const [franquicias, setFranquicias] = useState([])
   const [stats, setStats]         = useState(null)
   const [loading, setLoading]     = useState(true)
   const [modal, setModal]         = useState(null)
   const [filters, setFilters]     = useState({ search: '', franquicia_id: '', estado: '' })
+  const [page, setPage]           = useState(1)
 
   const load = async () => {
     setLoading(true)
     try {
       const params = {}
-      if (filters.search)       params.search       = filters.search
+      if (filters.search)        params.search        = filters.search
       if (filters.franquicia_id) params.franquicia_id = filters.franquicia_id
-      if (filters.estado)       params.estado       = filters.estado
+      if (filters.estado)        params.estado        = filters.estado
 
       const [eData, fData, sData] = await Promise.all([
         api.get('/rrhh/empleados', { params }).then(r => r.data),
@@ -171,7 +173,7 @@ const Personal = () => {
     }
   }
 
-  useEffect(() => { load() }, [filters])
+  useEffect(() => { setPage(1); load() }, [filters])
 
   const handleBaja = async (id, nombre) => {
     if (!confirm(`¿Dar de baja a "${nombre}"?`)) return
@@ -184,19 +186,21 @@ const Personal = () => {
     }
   }
 
-  const initials = (nombre) => nombre.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+  const initials    = (nombre) => nombre.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
   const avatarColors = ['#E5BC55', '#58a6ff', '#3fb950', '#bc8cff', '#e3762a', '#f85149']
-  const avatarColor = (id) => avatarColors[id % avatarColors.length]
+  const avatarColor  = (id) => avatarColors[id % avatarColors.length]
+
+  const totalPages   = Math.ceil(empleados.length / LIMIT)
+  const empPagina    = empleados.slice((page - 1) * LIMIT, page * LIMIT)
 
   return (
     <div className="page-content">
-      {/* Stats row */}
       {stats && (
         <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(4,1fr)', marginBottom: 20 }}>
           {[
-            { label: 'Total empleados',    value: stats.total,     icon: '👥', color: 'blue'  },
-            { label: 'Activos',            value: stats.activos,   icon: '✅', color: 'green' },
-            { label: 'Masa salarial/mes',  value: formatCurrency(stats.masa_salarial_mensual), icon: '💰', color: 'gold' },
+            { label: 'Total empleados',   value: stats.total,     icon: '👥', color: 'blue'  },
+            { label: 'Activos',           value: stats.activos,   icon: '✅', color: 'green' },
+            { label: 'Masa salarial/mes', value: formatCurrency(stats.masa_salarial_mensual), icon: '💰', color: 'gold' },
             { label: 'Bajas',             value: stats.bajas,     icon: '⚠️', color: 'red'   },
           ].map(s => (
             <div key={s.label} className={`stat-card stat-card--${s.color}`}>
@@ -208,7 +212,6 @@ const Personal = () => {
         </div>
       )}
 
-      {/* Tabs */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         {[
           { key: 'empleados', label: '👥 Empleados' },
@@ -223,7 +226,6 @@ const Personal = () => {
         ))}
       </div>
 
-      {/* EMPLEADOS TAB */}
       {tab === 'empleados' && (
         <>
           <div className="filter-row">
@@ -265,7 +267,7 @@ const Personal = () => {
                       <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--text3)', padding: 40 }}>
                         No hay empleados. <button className="link-sm" onClick={() => setModal('new')}>Añadir el primero →</button>
                       </td></tr>
-                    ) : empleados.map(emp => (
+                    ) : empPagina.map(emp => (
                       <tr key={emp.id}>
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -310,15 +312,26 @@ const Personal = () => {
                 </table>
               </div>
             )}
+
+            {totalPages > 1 && (
+              <div style={{ display:'flex', justifyContent:'center', gap:6, padding:'16px 0', borderTop:'1px solid var(--border)' }}>
+                <button className="btn btn-secondary btn-sm"
+                  onClick={() => setPage(p => Math.max(1, p-1))}
+                  disabled={page === 1}>← Anterior</button>
+                <span style={{ padding:'5px 12px', fontSize:13, color:'var(--text2)' }}>
+                  {page} / {totalPages} · {empleados.length} empleados
+                </span>
+                <button className="btn btn-secondary btn-sm"
+                  onClick={() => setPage(p => Math.min(totalPages, p+1))}
+                  disabled={page === totalPages}>Siguiente →</button>
+              </div>
+            )}
           </div>
         </>
       )}
 
-      {/* NÓMINAS TAB */}
       {tab === 'nominas' && <NominasTab franquicias={franquicias} />}
-
-      {/* CVs TAB */}
-      {tab === 'cvs' && <CVsTab franquicias={franquicias} />}
+      {tab === 'cvs'     && <CVsTab franquicias={franquicias} />}
 
       {modal && (
         <ModalEmpleado
@@ -332,15 +345,14 @@ const Personal = () => {
   )
 }
 
-// ── NÓMINAS TAB ───────────────────────────────────────────────────────────────
-
 const NominasTab = ({ franquicias }) => {
   const now = new Date()
-  const [periodo, setPeriodo] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
+  const [periodo, setPeriodo]         = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
   const [franquicia_id, setFranquiciaId] = useState('')
-  const [nominas, setNominas] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [generating, setGenerating] = useState(false)
+  const [nominas, setNominas]         = useState([])
+  const [loading, setLoading]         = useState(false)
+  const [generating, setGenerating]   = useState(false)
+  const [page, setPage]               = useState(1)
 
   const loadNominas = async () => {
     setLoading(true)
@@ -349,6 +361,7 @@ const NominasTab = ({ franquicias }) => {
       if (periodo) params.periodo = periodo
       const data = await api.get('/rrhh/nominas', { params }).then(r => r.data)
       setNominas(data)
+      setPage(1)
     } catch {
       toast.error('Error al cargar nóminas')
     } finally {
@@ -375,6 +388,9 @@ const NominasTab = ({ franquicias }) => {
   const totalBruto = nominas.reduce((s, n) => s + parseFloat(n.salario_bruto || 0), 0)
   const totalNeto  = nominas.reduce((s, n) => s + parseFloat(n.salario_neto  || 0), 0)
   const totalDed   = nominas.reduce((s, n) => s + parseFloat(n.deducciones   || 0), 0)
+
+  const totalPages  = Math.ceil(nominas.length / LIMIT)
+  const nomPagina   = nominas.slice((page - 1) * LIMIT, page * LIMIT)
 
   return (
     <div>
@@ -424,7 +440,7 @@ const NominasTab = ({ franquicias }) => {
                   <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--text3)', padding: 40 }}>
                     No hay nóminas para este periodo. Pulsa "Generar nóminas" para crearlas.
                   </td></tr>
-                ) : nominas.map(n => (
+                ) : nomPagina.map(n => (
                   <tr key={n.id}>
                     <td>
                       <div style={{ fontWeight: 600 }}>{n.empleado?.nombre}</div>
@@ -456,12 +472,24 @@ const NominasTab = ({ franquicias }) => {
             </table>
           </div>
         )}
+
+        {totalPages > 1 && (
+          <div style={{ display:'flex', justifyContent:'center', gap:6, padding:'16px 0', borderTop:'1px solid var(--border)' }}>
+            <button className="btn btn-secondary btn-sm"
+              onClick={() => setPage(p => Math.max(1, p-1))}
+              disabled={page === 1}>← Anterior</button>
+            <span style={{ padding:'5px 12px', fontSize:13, color:'var(--text2)' }}>
+              {page} / {totalPages} · {nominas.length} nóminas
+            </span>
+            <button className="btn btn-secondary btn-sm"
+              onClick={() => setPage(p => Math.min(totalPages, p+1))}
+              disabled={page === totalPages}>Siguiente →</button>
+          </div>
+        )}
       </div>
     </div>
   )
 }
-
-// ── CVs IA TAB ────────────────────────────────────────────────────────────────
 
 const CVsTab = ({ franquicias }) => {
   const [file, setFile]           = useState(null)
@@ -490,11 +518,14 @@ const CVsTab = ({ franquicias }) => {
   }
 
   const scoreColor = (s) => s >= 80 ? 'var(--green)' : s >= 60 ? 'var(--orange)' : 'var(--red)'
-  const recLabel   = { contratar: { label: '⭐ Contratar', cls: 'status--green' }, revisar: { label: '🔍 Revisar', cls: 'status--orange' }, descartar: { label: '❌ Descartar', cls: 'status--red' } }
+  const recLabel   = {
+    contratar: { label: '⭐ Contratar', cls: 'status--green' },
+    revisar:   { label: '🔍 Revisar',   cls: 'status--orange' },
+    descartar: { label: '❌ Descartar', cls: 'status--red' }
+  }
 
   return (
     <div>
-      {/* Upload panel */}
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="card-title" style={{ marginBottom: 16 }}>🤖 Análisis de CVs con Inteligencia Artificial</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -543,7 +574,6 @@ const CVsTab = ({ franquicias }) => {
         </div>
       </div>
 
-      {/* Results */}
       {results.map((r, i) => (
         <div key={i} className="card" style={{ marginBottom: 12 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 16 }}>
@@ -584,7 +614,7 @@ const CVsTab = ({ franquicias }) => {
                 <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 6 }}>{s.label}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <div style={{ flex: 1, height: 4, background: 'var(--bg4)', borderRadius: 2, overflow: 'hidden' }}>
-                    <div style={{ width: `${s.val}%`, height: '100%', background: `linear-gradient(90deg,var(--gold),var(--green))`, borderRadius: 2 }} />
+                    <div style={{ width: `${s.val}%`, height: '100%', background: 'linear-gradient(90deg,var(--gold),var(--green))', borderRadius: 2 }} />
                   </div>
                   <span style={{ fontSize: 12, fontWeight: 700, color: scoreColor(s.val), minWidth: 30 }}>{s.val}%</span>
                 </div>

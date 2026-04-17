@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 const ESTADOS = ['pendiente', 'pagada', 'vencida', 'anulada']
 const TIPOS   = ['emitida', 'recibida']
 const IVA_OPTS = [0, 4, 10, 21]
+const LIMIT = 15
 
 const ESTADO_STYLE = {
   pagada:   'status--green',
@@ -15,7 +16,6 @@ const ESTADO_STYLE = {
   anulada:  'status--blue',
 }
 
-// ── Modal Nueva/Editar Factura ────────────────────────────────────────────────
 const ModalFactura = ({ factura, empresas, onClose, onSaved }) => {
   const isEdit = !!factura?.id
   const [form, setForm] = useState({
@@ -107,13 +107,10 @@ const ModalFactura = ({ factura, empresas, onClose, onSaved }) => {
             </div>
             <div className="form-group">
               <label>IVA</label>
-              <select value={form.porcentaje_iva}
-                onChange={e => set('porcentaje_iva', e.target.value)}>
+              <select value={form.porcentaje_iva} onChange={e => set('porcentaje_iva', e.target.value)}>
                 {IVA_OPTS.map(v => <option key={v} value={v}>{v}%</option>)}
               </select>
             </div>
-
-            {/* Live total preview */}
             <div style={{
               gridColumn: '1/-1', background: 'var(--bg3)', borderRadius: 8,
               padding: '12px 16px', display: 'flex', gap: 24, fontSize: 13,
@@ -125,15 +122,13 @@ const ModalFactura = ({ factura, empresas, onClose, onSaved }) => {
                 Total: <strong style={{ color: 'var(--gold)', fontFamily: 'Syne' }}>{formatCurrency(total)}</strong>
               </span>
             </div>
-
             <div className="form-group">
               <label>Fecha *</label>
               <input type="date" value={form.fecha} onChange={e => set('fecha', e.target.value)} />
             </div>
             <div className="form-group">
               <label>Fecha vencimiento</label>
-              <input type="date" value={form.fecha_vencimiento}
-                onChange={e => set('fecha_vencimiento', e.target.value)} />
+              <input type="date" value={form.fecha_vencimiento} onChange={e => set('fecha_vencimiento', e.target.value)} />
             </div>
             <div className="form-group">
               <label>Estado</label>
@@ -154,7 +149,6 @@ const ModalFactura = ({ factura, empresas, onClose, onSaved }) => {
   )
 }
 
-// ── Modal OCR ─────────────────────────────────────────────────────────────────
 const ModalOCR = ({ empresas, onClose, onSaved }) => {
   const [file, setFile]       = useState(null)
   const [result, setResult]   = useState(null)
@@ -168,14 +162,12 @@ const ModalOCR = ({ empresas, onClose, onSaved }) => {
     try {
       const fd = new FormData()
       fd.append('file', file)
-      const res = await api.post('/facturacion/ocr', fd, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
+      const res = await api.post('/facturacion/ocr', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
       const d = res.data.data || res.data
       setResult(d)
       setForm({
-        tipo:                     'recibida',
-        empresa_id:               empresas[0]?.id ? String(empresas[0].id) : '',
+        tipo: 'recibida',
+        empresa_id: empresas[0]?.id ? String(empresas[0].id) : '',
         cliente_proveedor_nombre: d.proveedor_nombre || '',
         cliente_proveedor_cif:    d.proveedor_cif    || '',
         concepto:                 d.concepto         || '',
@@ -183,7 +175,7 @@ const ModalOCR = ({ empresas, onClose, onSaved }) => {
         porcentaje_iva:           d.porcentaje_iva   || 21,
         fecha:                    d.fecha            || new Date().toISOString().split('T')[0],
         fecha_vencimiento:        d.fecha_vencimiento || '',
-        estado:                   'pendiente',
+        estado: 'pendiente',
       })
       toast.success('Factura escaneada correctamente')
     } catch (err) {
@@ -243,10 +235,7 @@ const ModalOCR = ({ empresas, onClose, onSaved }) => {
             </div>
           ) : (
             <div>
-              <div style={{
-                background: 'var(--bg3)', borderRadius: 8, padding: 12,
-                borderLeft: '3px solid var(--green)', marginBottom: 16, fontSize: 13
-              }}>
+              <div style={{ background: 'var(--bg3)', borderRadius: 8, padding: 12, borderLeft: '3px solid var(--green)', marginBottom: 16, fontSize: 13 }}>
                 ✅ La IA ha extraído los datos. Revisa y corrige si es necesario antes de importar.
               </div>
               <div className="form-grid-2">
@@ -258,40 +247,33 @@ const ModalOCR = ({ empresas, onClose, onSaved }) => {
                 </div>
                 <div className="form-group">
                   <label>Proveedor</label>
-                  <input value={form.cliente_proveedor_nombre}
-                    onChange={e => setF('cliente_proveedor_nombre', e.target.value)} />
+                  <input value={form.cliente_proveedor_nombre} onChange={e => setF('cliente_proveedor_nombre', e.target.value)} />
                 </div>
                 <div className="form-group">
                   <label>CIF Proveedor</label>
-                  <input value={form.cliente_proveedor_cif}
-                    onChange={e => setF('cliente_proveedor_cif', e.target.value)} />
+                  <input value={form.cliente_proveedor_cif} onChange={e => setF('cliente_proveedor_cif', e.target.value)} />
                 </div>
                 <div className="form-group">
                   <label>Concepto</label>
-                  <input value={form.concepto}
-                    onChange={e => setF('concepto', e.target.value)} />
+                  <input value={form.concepto} onChange={e => setF('concepto', e.target.value)} />
                 </div>
                 <div className="form-group">
                   <label>Base imponible</label>
-                  <input type="number" value={form.base_imponible}
-                    onChange={e => setF('base_imponible', e.target.value)} />
+                  <input type="number" value={form.base_imponible} onChange={e => setF('base_imponible', e.target.value)} />
                 </div>
                 <div className="form-group">
                   <label>IVA %</label>
-                  <select value={form.porcentaje_iva}
-                    onChange={e => setF('porcentaje_iva', e.target.value)}>
+                  <select value={form.porcentaje_iva} onChange={e => setF('porcentaje_iva', e.target.value)}>
                     {IVA_OPTS.map(v => <option key={v} value={v}>{v}%</option>)}
                   </select>
                 </div>
                 <div className="form-group">
                   <label>Fecha</label>
-                  <input type="date" value={form.fecha}
-                    onChange={e => setF('fecha', e.target.value)} />
+                  <input type="date" value={form.fecha} onChange={e => setF('fecha', e.target.value)} />
                 </div>
                 <div className="form-group">
                   <label>Vencimiento</label>
-                  <input type="date" value={form.fecha_vencimiento}
-                    onChange={e => setF('fecha_vencimiento', e.target.value)} />
+                  <input type="date" value={form.fecha_vencimiento} onChange={e => setF('fecha_vencimiento', e.target.value)} />
                 </div>
               </div>
             </div>
@@ -310,7 +292,6 @@ const ModalOCR = ({ empresas, onClose, onSaved }) => {
   )
 }
 
-// ── Modal Export ZIP ──────────────────────────────────────────────────────────
 const ModalZip = ({ facturas, onClose }) => {
   const [selected, setSelected] = useState(new Set(
     facturas.filter(f => f.estado !== 'anulada').map(f => f.id)
@@ -327,10 +308,7 @@ const ModalZip = ({ facturas, onClose }) => {
     if (!selected.size) { toast.error('Selecciona al menos una factura'); return }
     setExporting(true)
     try {
-      const res = await api.post('/facturacion/export/zip',
-        { ids: [...selected] },
-        { responseType: 'blob' }
-      )
+      const res = await api.post('/facturacion/export/zip', { ids: [...selected] }, { responseType: 'blob' })
       const url  = URL.createObjectURL(new Blob([res.data], { type: 'application/zip' }))
       const link = document.createElement('a')
       link.href  = url
@@ -358,17 +336,9 @@ const ModalZip = ({ facturas, onClose }) => {
             Selecciona las facturas a incluir en el ZIP:
           </div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-            <button className="btn btn-secondary btn-sm"
-              onClick={() => setSelected(new Set(facturas.map(f => f.id)))}>
-              Seleccionar todas
-            </button>
-            <button className="btn btn-secondary btn-sm"
-              onClick={() => setSelected(new Set())}>
-              Limpiar
-            </button>
-            <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text3)', alignSelf: 'center' }}>
-              {selected.size} seleccionadas
-            </span>
+            <button className="btn btn-secondary btn-sm" onClick={() => setSelected(new Set(facturas.map(f => f.id)))}>Seleccionar todas</button>
+            <button className="btn btn-secondary btn-sm" onClick={() => setSelected(new Set())}>Limpiar</button>
+            <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text3)', alignSelf: 'center' }}>{selected.size} seleccionadas</span>
           </div>
           <div style={{ maxHeight: 340, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
             {facturas.map(f => (
@@ -376,13 +346,10 @@ const ModalZip = ({ facturas, onClose }) => {
                 display: 'flex', alignItems: 'center', gap: 10,
                 padding: '10px 12px', background: selected.has(f.id) ? 'rgba(229,188,85,.08)' : 'var(--bg3)',
                 border: `1px solid ${selected.has(f.id) ? 'rgba(229,188,85,.3)' : 'var(--border)'}`,
-                borderRadius: 6, cursor: 'pointer', transition: 'all .15s',
+                borderRadius: 6, cursor: 'pointer',
               }}>
-                <input type="checkbox" checked={selected.has(f.id)} onChange={() => toggle(f.id)}
-                  style={{ width: 'auto', padding: 0 }} />
-                <span style={{ flex: 1, fontSize: 13 }}>
-                  <strong>{f.numero}</strong> · {f.cliente_proveedor_nombre}
-                </span>
+                <input type="checkbox" checked={selected.has(f.id)} onChange={() => toggle(f.id)} style={{ width: 'auto', padding: 0 }} />
+                <span style={{ flex: 1, fontSize: 13 }}><strong>{f.numero}</strong> · {f.cliente_proveedor_nombre}</span>
                 <span style={{ fontSize: 12, color: 'var(--text3)' }}>{formatCurrency(parseFloat(f.total || 0))}</span>
                 <span className={`status ${ESTADO_STYLE[f.estado]}`} style={{ fontSize: 10 }}>{f.estado}</span>
               </label>
@@ -400,15 +367,15 @@ const ModalZip = ({ facturas, onClose }) => {
   )
 }
 
-// ── PÁGINA PRINCIPAL ──────────────────────────────────────────────────────────
 const Facturas = () => {
   const [facturas, setFacturas]   = useState([])
   const [empresas, setEmpresas]   = useState([])
   const [stats, setStats]         = useState(null)
   const [loading, setLoading]     = useState(true)
-  const [modal, setModal]         = useState(null) // null|'new'|'ocr'|'zip'|facturaObj
+  const [modal, setModal]         = useState(null)
   const [filters, setFilters]     = useState({ tipo: '', estado: '', search: '' })
   const [tabFiltro, setTabFiltro] = useState('todas')
+  const [page, setPage]           = useState(1)
 
   const load = async () => {
     setLoading(true)
@@ -437,7 +404,7 @@ const Facturas = () => {
     }
   }
 
-  useEffect(() => { load() }, [filters, tabFiltro])
+  useEffect(() => { setPage(1); load() }, [filters, tabFiltro])
 
   const handleAnular = async (id, numero) => {
     if (!confirm(`¿Anular la factura ${numero}?`)) return
@@ -464,6 +431,9 @@ const Facturas = () => {
     { key: 'pendientes', label: '⏳ Pendientes' },
     { key: 'vencidas',   label: '⚠️ Vencidas' },
   ]
+
+  const totalPages   = Math.ceil(facturas.length / LIMIT)
+  const factPagina   = facturas.slice((page - 1) * LIMIT, page * LIMIT)
 
   return (
     <div className="page-content">
@@ -496,7 +466,7 @@ const Facturas = () => {
         </div>
       )}
 
-      {/* Tabs + actions */}
+      {/* Tabs */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 2, background: 'var(--bg3)', borderRadius: 8, padding: 4, border: '1px solid var(--border)' }}>
           {TABS.map(t => (
@@ -508,117 +478,118 @@ const Facturas = () => {
             </button>
           ))}
         </div>
-        <div className="search-box" style={{ flex: 1, maxWidth: 260 }}>
-          <span>🔍</span>
-          <input placeholder="Buscar factura, cliente..."
-            value={filters.search}
-            onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} />
-        </div>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-          <button className="btn btn-secondary" onClick={() => setModal('ocr')}>📷 Importar OCR</button>
-          <button className="btn btn-secondary" onClick={() => setModal('zip')}>📦 Export ZIP</button>
-          <button className="btn btn-primary" onClick={() => setModal('new')}>+ Nueva Factura</button>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="card">
-        <div className="card-header">
-          <span className="card-title">🧾 Facturas ({facturas.length})</span>
-        </div>
-        {loading ? <div className="loading">Cargando...</div> : (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Nº Factura</th><th>Tipo</th><th>Cliente/Proveedor</th>
-                  <th>Concepto</th><th>Base</th><th>IVA</th><th>Total</th>
-                  <th>Fecha</th><th>Vencimiento</th><th>Estado</th><th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {facturas.length === 0 ? (
-                  <tr><td colSpan={11} style={{ textAlign: 'center', color: 'var(--text3)', padding: 40 }}>
-                    No hay facturas. <button className="link-sm" onClick={() => setModal('new')}>Crear la primera →</button>
-                  </td></tr>
-                ) : facturas.map(f => (
-                  <tr key={f.id}>
-                    <td><strong>{f.numero}</strong></td>
-                    <td>
-                      <span className={`status ${f.tipo === 'emitida' ? 'status--green' : 'status--blue'}`}
-                        style={{ fontSize: 11 }}>
-                        {f.tipo === 'emitida' ? '↑ Emitida' : '↓ Recibida'}
-                      </span>
-                    </td>
-                    <td>
-                      <div style={{ fontWeight: 500 }}>{f.cliente_proveedor_nombre}</div>
-                      {f.cliente_proveedor_cif && <div style={{ fontSize: 11, color: 'var(--text3)' }}>{f.cliente_proveedor_cif}</div>}
-                    </td>
-                    <td style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {f.concepto}
-                    </td>
-                    <td>{formatCurrency(parseFloat(f.base_imponible || 0))}</td>
-                    <td style={{ color: 'var(--text3)', fontSize: 12 }}>{f.porcentaje_iva}%</td>
-                    <td className="amount-gold">{formatCurrency(parseFloat(f.total || 0))}</td>
-                    <td style={{ fontSize: 12 }}>{f.fecha ? formatDate(f.fecha) : '—'}</td>
-                    <td style={{ fontSize: 12, color: f.estado === 'vencida' ? 'var(--red)' : 'inherit' }}>
-                      {f.fecha_vencimiento ? formatDate(f.fecha_vencimiento) : '—'}
-                    </td>
-                    <td>
-                      <select
-                        value={f.estado}
-                        onChange={e => cambiarEstado(f.id, e.target.value)}
-                        style={{
-                          background: 'transparent', border: 'none', cursor: 'pointer',
-                          fontSize: 11, fontWeight: 600, padding: '3px 6px', borderRadius: 20,
-                          color: f.estado === 'pagada' ? 'var(--green)' : f.estado === 'vencida' ? 'var(--red)' : f.estado === 'pendiente' ? 'var(--orange)' : 'var(--text3)',
-                        }}>
-                        {ESTADOS.map(e => <option key={e} value={e}>{e.charAt(0).toUpperCase() + e.slice(1)}</option>)}
-                      </select>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        <button className="btn btn-secondary btn-sm" onClick={() => setModal(f)}>✏️</button>
-                        <button className="btn btn-secondary btn-sm"
-                          style={{ color: 'var(--red)' }}
-                          onClick={() => handleAnular(f.id, f.numero)}
-                          disabled={f.estado === 'anulada'}>🗑️</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        {tabFiltro !== 'email' && (
+          <>
+            <div className="search-box" style={{ flex: 1, maxWidth: 260 }}>
+              <span>🔍</span>
+              <input placeholder="Buscar factura, cliente..."
+                value={filters.search}
+                onChange={e => setFilters(f => ({ ...f, search: e.target.value }))} />
+            </div>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+              <button className="btn btn-secondary" onClick={() => setModal('ocr')}>📷 Importar OCR</button>
+              <button className="btn btn-secondary" onClick={() => setModal('zip')}>📦 Export ZIP</button>
+              <button className="btn btn-primary" onClick={() => setModal('new')}>+ Nueva Factura</button>
+            </div>
+          </>
         )}
       </div>
 
-      {/* Email tab */}
-      {tabFiltro === 'email' && (
-        <EmailFacturas />
+      {/* EMAIL TAB — arriba de la tabla */}
+      {tabFiltro === 'email' && <EmailFacturas onFacturasImportadas={load} />}
+
+      {/* TABLA — solo cuando no es pestaña email */}
+      {tabFiltro !== 'email' && (
+        <div className="card">
+          <div className="card-header">
+            <span className="card-title">🧾 Facturas ({facturas.length})</span>
+          </div>
+          {loading ? <div className="loading">Cargando...</div> : (
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nº Factura</th><th>Tipo</th><th>Cliente/Proveedor</th>
+                    <th>Concepto</th><th>Base</th><th>IVA</th><th>Total</th>
+                    <th>Fecha</th><th>Vencimiento</th><th>Estado</th><th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {facturas.length === 0 ? (
+                    <tr><td colSpan={11} style={{ textAlign: 'center', color: 'var(--text3)', padding: 40 }}>
+                      No hay facturas. <button className="link-sm" onClick={() => setModal('new')}>Crear la primera →</button>
+                    </td></tr>
+                  ) : factPagina.map(f => (
+                    <tr key={f.id}>
+                      <td><strong>{f.numero}</strong></td>
+                      <td>
+                        <span className={`status ${f.tipo === 'emitida' ? 'status--green' : 'status--blue'}`} style={{ fontSize: 11 }}>
+                          {f.tipo === 'emitida' ? '↑ Emitida' : '↓ Recibida'}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ fontWeight: 500 }}>{f.cliente_proveedor_nombre}</div>
+                        {f.cliente_proveedor_cif && <div style={{ fontSize: 11, color: 'var(--text3)' }}>{f.cliente_proveedor_cif}</div>}
+                      </td>
+                      <td style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.concepto}</td>
+                      <td>{formatCurrency(parseFloat(f.base_imponible || 0))}</td>
+                      <td style={{ color: 'var(--text3)', fontSize: 12 }}>{f.porcentaje_iva}%</td>
+                      <td className="amount-gold">{formatCurrency(parseFloat(f.total || 0))}</td>
+                      <td style={{ fontSize: 12 }}>{f.fecha ? formatDate(f.fecha) : '—'}</td>
+                      <td style={{ fontSize: 12, color: f.estado === 'vencida' ? 'var(--red)' : 'inherit' }}>
+                        {f.fecha_vencimiento ? formatDate(f.fecha_vencimiento) : '—'}
+                      </td>
+                      <td>
+                        <select value={f.estado} onChange={e => cambiarEstado(f.id, e.target.value)}
+                          style={{
+                            background: 'transparent', border: 'none', cursor: 'pointer',
+                            fontSize: 11, fontWeight: 600, padding: '3px 6px', borderRadius: 20,
+                            color: f.estado === 'pagada' ? 'var(--green)' : f.estado === 'vencida' ? 'var(--red)' : f.estado === 'pendiente' ? 'var(--orange)' : 'var(--text3)',
+                          }}>
+                          {ESTADOS.map(e => <option key={e} value={e}>{e.charAt(0).toUpperCase() + e.slice(1)}</option>)}
+                        </select>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          <button className="btn btn-secondary btn-sm" onClick={() => setModal(f)}>✏️</button>
+                          <button className="btn btn-secondary btn-sm" style={{ color: 'var(--red)' }}
+                            onClick={() => handleAnular(f.id, f.numero)}
+                            disabled={f.estado === 'anulada'}>🗑️</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div style={{ display:'flex', justifyContent:'center', gap:6, padding:'16px 0', borderTop:'1px solid var(--border)' }}>
+              <button className="btn btn-secondary btn-sm"
+                onClick={() => setPage(p => Math.max(1, p-1))}
+                disabled={page === 1}>← Anterior</button>
+              <span style={{ padding:'5px 12px', fontSize:13, color:'var(--text2)' }}>
+                {page} / {totalPages} · {facturas.length} facturas
+              </span>
+              <button className="btn btn-secondary btn-sm"
+                onClick={() => setPage(p => Math.min(totalPages, p+1))}
+                disabled={page === totalPages}>Siguiente →</button>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Modals */}
       {(modal === 'new' || (modal && modal.id)) && (
-        <ModalFactura
-          factura={modal === 'new' ? null : modal}
-          empresas={empresas}
-          onClose={() => setModal(null)}
-          onSaved={() => { setModal(null); load() }}
-        />
+        <ModalFactura factura={modal === 'new' ? null : modal} empresas={empresas}
+          onClose={() => setModal(null)} onSaved={() => { setModal(null); load() }} />
       )}
       {modal === 'ocr' && (
-        <ModalOCR
-          empresas={empresas}
-          onClose={() => setModal(null)}
-          onSaved={() => { setModal(null); load() }}
-        />
+        <ModalOCR empresas={empresas} onClose={() => setModal(null)} onSaved={() => { setModal(null); load() }} />
       )}
       {modal === 'zip' && (
-        <ModalZip
-          facturas={facturas}
-          onClose={() => setModal(null)}
-        />
+        <ModalZip facturas={facturas} onClose={() => setModal(null)} />
       )}
     </div>
   )

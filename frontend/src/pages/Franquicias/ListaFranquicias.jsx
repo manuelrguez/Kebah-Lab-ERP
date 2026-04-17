@@ -31,7 +31,6 @@ const ModalFranquicia = ({ franquicia, empresas, comunidades, onClose, onSaved }
     activo:          franquicia?.activo          ?? true,
   })
   const [saving, setSaving] = useState(false)
-
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   const handleSubmit = async () => {
@@ -138,13 +137,16 @@ const ModalFranquicia = ({ franquicia, empresas, comunidades, onClose, onSaved }
   )
 }
 
+const LIMIT = 15
+
 const ListaFranquicias = () => {
   const [franquicias, setFranquicias] = useState([])
   const [empresas, setEmpresas]       = useState([])
   const [comunidades, setComunidades] = useState([])
   const [loading, setLoading]         = useState(true)
-  const [modal, setModal]             = useState(null) // null | 'new' | franquicia obj
+  const [modal, setModal]             = useState(null)
   const [filters, setFilters]         = useState({ search: '', comunidad_id: '', empresa_id: '', tipo: '', activo: '' })
+  const [page, setPage]               = useState(1)
 
   const load = async () => {
     setLoading(true)
@@ -171,7 +173,7 @@ const ListaFranquicias = () => {
     }
   }
 
-  useEffect(() => { load() }, [filters])
+  useEffect(() => { setPage(1); load() }, [filters])
 
   const handleDelete = async (id, nombre) => {
     if (!confirm(`¿Desactivar la franquicia "${nombre}"?`)) return
@@ -185,6 +187,9 @@ const ListaFranquicias = () => {
   }
 
   const tipoLabel = (tipo) => TIPOS.find(t => t.value === tipo)?.label || tipo
+
+  const totalPages  = Math.ceil(franquicias.length / LIMIT)
+  const franqPagina = franquicias.slice((page - 1) * LIMIT, page * LIMIT)
 
   return (
     <div className="page-content">
@@ -249,7 +254,7 @@ const ListaFranquicias = () => {
                   <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--text3)', padding: 40 }}>
                     No hay franquicias. <button className="link-sm" onClick={() => setModal('new')}>Crear la primera →</button>
                   </td></tr>
-                ) : franquicias.map(f => (
+                ) : franqPagina.map(f => (
                   <tr key={f.id}>
                     <td>
                       <div style={{ fontWeight: 600 }}>🏪 {f.nombre}</div>
@@ -282,6 +287,20 @@ const ListaFranquicias = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div style={{ display:'flex', justifyContent:'center', gap:6, padding:'16px 0', borderTop:'1px solid var(--border)' }}>
+            <button className="btn btn-secondary btn-sm"
+              onClick={() => setPage(p => Math.max(1, p-1))}
+              disabled={page === 1}>← Anterior</button>
+            <span style={{ padding:'5px 12px', fontSize:13, color:'var(--text2)' }}>
+              {page} / {totalPages} · {franquicias.length} franquicias
+            </span>
+            <button className="btn btn-secondary btn-sm"
+              onClick={() => setPage(p => Math.min(totalPages, p+1))}
+              disabled={page === totalPages}>Siguiente →</button>
           </div>
         )}
       </div>
