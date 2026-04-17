@@ -127,10 +127,10 @@ exports.syncGuardado = async (req, res) => {
   try {
     const { tenant } = req
     const empresa_id = tenant?.empresa_id || req.user?.empresa_id || 1
-    const { max_emails, filtros_asunto } = req.body
+    const { config_id, max_emails, filtros_asunto } = req.body
 
     const getCredentials = require('./email-config.controller.js').getCredentials
-    const credentials = await getCredentials(empresa_id)
+    const credentials = await getCredentials(empresa_id, config_id || null)
     if (!credentials) {
       return res.status(404).json({ message: 'No hay configuración de correo guardada. Ve a Configuración → Correo.' })
     }
@@ -148,7 +148,7 @@ exports.syncGuardado = async (req, res) => {
     res.json({ success: true, mensaje: 'Sync iniciado', importadas: 0, procesados: 0, duplicadas: 0, errores: 0, facturas: [] })
 
     emailInvoiceService.sincronizar(config, { empresa_id })
-      .then(r => console.log(`[EmailInvoice] Sync guardado completado: ${r.importadas} importadas`))
+      .then(r => console.log(`[EmailInvoice] Sync completado (${credentials.nombre}): ${r.importadas} importadas`))
       .catch(e => console.error('[EmailInvoice] Error sync guardado:', e.message))
 
   } catch (err) {

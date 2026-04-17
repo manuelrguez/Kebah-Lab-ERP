@@ -3,47 +3,75 @@ import api from '../../services/api.js'
 import toast from 'react-hot-toast'
 
 const PROVIDERS = {
-  imap:    { label: 'IMAP genérico (Gmail, Yahoo, etc.)', host: 'imap.gmail.com', port: 993 },
-  outlook: { label: 'Outlook / Microsoft 365',           host: 'outlook.office365.com', port: 993 },
+  imap:    { label: 'IMAP genérico (Gmail, Yahoo, etc.)', host: 'imap.gmail.com',          port: 993 },
+  outlook: { label: 'Outlook / Microsoft 365',           host: 'outlook.office365.com',    port: 993 },
+}
+
+const FORM_VACIO = {
+  nombre:   '',
+  provider: 'imap',
+  host:     'imap.gmail.com',
+  port:     993,
+  tls:      true,
+  usuario:  '',
+  password: '',
+  carpeta:  'INBOX',
 }
 
 const ConfiguracionEmail = () => {
-  const [config, setConfig]     = useState(null)
-  const [loading, setLoading]   = useState(true)
-  const [saving, setSaving]     = useState(false)
-  const [testing, setTesting]   = useState(false)
-  const [editando, setEditando] = useState(false)
-  const [form, setForm]         = useState({
-    provider: 'imap',
-    host:     'imap.gmail.com',
-    port:     993,
-    tls:      true,
-    usuario:  '',
-    password: '',
-    carpeta:  'INBOX',
-  })
+  const [configs, setConfigs]     = useState([])
+  const [loading, setLoading]     = useState(true)
+  const [saving, setSaving]       = useState(false)
+  const [testing, setTesting]     = useState(null) // id que se está probando
+  const [editando, setEditando]   = useState(null) // null | 'new' | config obj
+  const [form, setForm]           = useState(FORM_VACIO)
 
-  useEffect(() => {
+  const load = () => {
     api.get('/email-config')
-      .then(r => { setConfig(r.data); if (!r.data) setEditando(true) })
-      .catch(() => setEditando(true))
+      .then(r => setConfigs(Array.isArray(r.data) ? r.data : (r.data ? [r.data] : [])))
+      .catch(() => setConfigs([]))
       .finally(() => setLoading(false))
-  }, [])
+  }
+
+  useEffect(() => { load() }, [])
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
+  const abrirNuevo = () => {
+    setForm(FORM_VACIO)
+    setEditando('new')
+  }
+
+  const abrirEditar = (config) => {
+    setForm({
+      nombre:   config.nombre,
+      provider: config.provider,
+      host:     config.host,
+      port:     config.port,
+      tls:      config.tls,
+      usuario:  config.usuario,
+      password: '', // no mostrar password cifrada
+      carpeta:  config.carpeta,
+    })
+    setEditando(config)
+  }
+
   const handleSave = async () => {
-    if (!form.usuario || !form.password) {
-      toast.error('Email y contraseña son obligatorios')
-      return
-    }
+    if (!form.usuario) { toast.error('El email es obligatorio'); return }
+    if (editando === 'new' && !form.password) { toast.error('La contraseña es obligatoria'); return }
+    if (!form.nombre) { toast.error('El nombre identificativo es obligatorio'); return }
+
     setSaving(true)
     try {
-      await api.post('/email-config', form)
-      toast.success('Configuración guardada correctamente')
-      const r = await api.get('/email-config')
-      setConfig(r.data)
-      setEditando(false)
+      if (editando === 'new') {
+        await api.post('/email-config', form)
+        toast.success('Cuenta añadida correctamente')
+      } else {
+        await api.put(`/email-config/${editando.id}`, form)
+        toast.success('Cuenta actualizada correctamente')
+      }
+      setEditando(null)
+      load()
     } catch (err) {
       toast.error(err.response?.data?.message || 'Error al guardar')
     } finally {
@@ -51,29 +79,25 @@ const ConfiguracionEmail = () => {
     }
   }
 
-  const handleTest = async () => {
-    setTesting(true)
+  const handleTest = async (id) => {
+    setTesting(id)
     try {
-      await api.post('/email-config/test')
+      await api.post(`/email-config/${id}/test`)
       toast.success('✅ Conexión exitosa')
     } catch (err) {
       toast.error(err.response?.data?.message || 'Error de conexión')
     } finally {
-      setTesting(false)
+      setTesting(null)
     }
   }
 
-  const handleDelete = async () => {
-    if (!confirm('¿Eliminar la configuración de correo?')) return
+  const handleDelete = async (id, nombre) => {
+    if (!confirm(`¿Eliminar la cuenta "${nombre}"?`)) return
     try {
-      await api.delete('/email-config')
-      setConfig(null)
-      setEditando(true)
-      setForm({ provider:'imap', host:'imap.gmail.com', port:993, tls:true, usuario:'', password:'', carpeta:'INBOX' })
-      toast.success('Configuración eliminada')
-    } catch {
-      toast.error('Error al eliminar')
-    }
+      await api.delete(`/email-config/${id}`)
+      toast.success('Cuenta eliminada')
+      load()
+    } catch { toast.error('Error al eliminar') }
   }
 
   if (loading) return <div className="loading">Cargando...</div>
@@ -83,75 +107,73 @@ const ConfiguracionEmail = () => {
       <div style={{ marginBottom: 20 }}>
         <h2 style={{ fontFamily: 'Syne', fontSize: 18, marginBottom: 6 }}>📬 Configuración de Correo</h2>
         <p style={{ fontSize: 13, color: 'var(--text2)' }}>
-          Configura tu cuenta de correo una sola vez para poder importar facturas automáticamente desde el buzón.
+          Añade una o varias cuentas de correo para importar facturas automáticamente desde el buzón.
         </p>
       </div>
 
-      {config && !editando ? (
-        // Vista — configuración guardada
-        <div className="card">
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 16,
-            padding: '16px 0', borderBottom: '1px solid var(--border)', marginBottom: 16,
-          }}>
-            <div style={{
-              width: 48, height: 48, borderRadius: 12, flexShrink: 0,
-              background: 'rgba(63,185,80,.15)', border: '1px solid rgba(63,185,80,.3)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
-            }}>✅</div>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 15 }}>Correo configurado</div>
-              <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>
-                Contraseña almacenada de forma segura con cifrado AES-256
-              </div>
-            </div>
-          </div>
+      {/* Lista de cuentas configuradas */}
+      {configs.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+          {configs.map(c => (
+            <div key={c.id} className="card" style={{ marginBottom: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                  background: c.activo ? 'rgba(63,185,80,.15)' : 'rgba(248,81,73,.1)',
+                  border: `1px solid ${c.activo ? 'rgba(63,185,80,.3)' : 'rgba(248,81,73,.3)'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
+                }}>{c.activo ? '✅' : '⏸️'}</div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-            {[
-              { label: 'Email',    value: config.usuario },
-              { label: 'Servidor', value: `${config.host}:${config.port}` },
-              { label: 'Provider', value: config.provider.toUpperCase() },
-              { label: 'Carpeta',  value: config.carpeta },
-            ].map(item => (
-              <div key={item.label} style={{
-                background: 'var(--bg3)', borderRadius: 8, padding: '10px 14px',
-                border: '1px solid var(--border)',
-              }}>
-                <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 4, textTransform: 'uppercase' }}>
-                  {item.label}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{c.nombre}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>
+                    {c.usuario} · {c.host} · {c.provider.toUpperCase()}
+                  </div>
                 </div>
-                <div style={{ fontWeight: 600, fontSize: 13 }}>{item.value}</div>
-              </div>
-            ))}
-          </div>
 
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn btn-secondary" onClick={handleTest} disabled={testing}>
-              {testing ? '⏳ Probando...' : '🔌 Probar conexión'}
-            </button>
-            <button className="btn btn-secondary" onClick={() => setEditando(true)}>
-              ✏️ Editar
-            </button>
-            <button className="btn btn-secondary" style={{ color: 'var(--red)', marginLeft: 'auto' }}
-              onClick={handleDelete}>
-              🗑️ Eliminar
-            </button>
-          </div>
-        </div>
-      ) : (
-        // Formulario de configuración
-        <div className="card">
-          {config && (
-            <div style={{
-              background: 'rgba(229,188,85,.08)', border: '1px solid rgba(229,188,85,.2)',
-              borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 12,
-            }}>
-              ✏️ Editando configuración — la contraseña actual se reemplazará al guardar.
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                  <button className="btn btn-secondary btn-sm"
+                    onClick={() => handleTest(c.id)}
+                    disabled={testing === c.id}>
+                    {testing === c.id ? '⏳' : '🔌'} Probar
+                  </button>
+                  <button className="btn btn-secondary btn-sm" onClick={() => abrirEditar(c)}>
+                    ✏️
+                  </button>
+                  <button className="btn btn-secondary btn-sm"
+                    style={{ color: 'var(--red)' }}
+                    onClick={() => handleDelete(c.id, c.nombre)}>
+                    🗑️
+                  </button>
+                </div>
+              </div>
             </div>
-          )}
+          ))}
+        </div>
+      )}
+
+      {/* Botón añadir */}
+      {!editando && (
+        <button className="btn btn-primary" onClick={abrirNuevo}>
+          + Añadir cuenta de correo
+        </button>
+      )}
+
+      {/* Formulario nueva/editar */}
+      {editando && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <div className="card-header">
+            <span className="card-title">
+              {editando === 'new' ? '➕ Nueva cuenta de correo' : `✏️ Editar — ${editando.nombre}`}
+            </span>
+          </div>
 
           <div className="form-grid-2">
+            <div className="form-group" style={{ gridColumn: '1/-1' }}>
+              <label>Nombre identificativo *</label>
+              <input value={form.nombre} onChange={e => set('nombre', e.target.value)}
+                placeholder="Ej: Gmail principal, Facturación, etc." />
+            </div>
             <div className="form-group">
               <label>Tipo de servidor</label>
               <select value={form.provider} onChange={e => {
@@ -182,10 +204,10 @@ const ConfiguracionEmail = () => {
                 placeholder="tu@gmail.com" />
             </div>
             <div className="form-group">
-              <label>Contraseña de aplicación *</label>
+              <label>Contraseña de aplicación {editando !== 'new' && '(dejar vacío para mantener)'}</label>
               <input type="password" value={form.password}
                 onChange={e => set('password', e.target.value)}
-                placeholder={config ? '(dejar vacío para mantener la actual)' : 'xxxx xxxx xxxx xxxx'}
+                placeholder="xxxx xxxx xxxx xxxx"
                 autoComplete="new-password" />
             </div>
           </div>
@@ -202,15 +224,21 @@ const ConfiguracionEmail = () => {
           )}
 
           <div style={{ display: 'flex', gap: 8 }}>
-            {config && (
-              <button className="btn btn-secondary" onClick={() => setEditando(false)}>
-                Cancelar
-              </button>
-            )}
+            <button className="btn btn-secondary" onClick={() => setEditando(null)}>Cancelar</button>
             <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-              {saving ? 'Guardando...' : '💾 Guardar configuración'}
+              {saving ? 'Guardando...' : '💾 Guardar'}
             </button>
           </div>
+        </div>
+      )}
+
+      {configs.length === 0 && !editando && (
+        <div style={{
+          background: 'rgba(248,81,73,.08)', border: '1px solid rgba(248,81,73,.3)',
+          borderRadius: 10, padding: '20px 24px', marginTop: 16,
+          fontSize: 13, color: 'var(--text2)',
+        }}>
+          ⚠️ No hay ninguna cuenta configurada. Pulsa "Añadir cuenta de correo" para comenzar.
         </div>
       )}
     </div>
